@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "حساب الجمل",
+  "version": "0.1.0",
+  "identifier": "com.ibrahimsalah.hisabjomal",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build:desktop",
+    "devUrl": "http://127.0.0.1:5173",
+    "frontendDist": "../release-web"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "حساب الجمل",
+        "width": 1200,
+        "height": 820,
+        "minWidth": 360,
+        "minHeight": 620,
+        "resizable": true
+      }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "category": "Utility",
+    "shortDescription": "أداة عربية لحساب الجمل المشرقي"
+  }
+}

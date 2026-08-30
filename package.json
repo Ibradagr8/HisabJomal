@@ -1,0 +1,22 @@
+{
+  "name": "hisab-jomal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:standalone",
+    "build:desktop": "npm run build:standalone && node scripts/copy-web.mjs",
+    "build:standalone": "esbuild src/main.js --bundle --format=iife --outfile=app.js",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:windows": "tauri build --bundles msi,nsis"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/cli": "^2.11.4",
+    "vite": "^7.1.7"
+  }
+}
