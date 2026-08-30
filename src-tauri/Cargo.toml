@@ -1,6 +1,6 @@
 [package]
 name = "hisab-jomal"
-version = "0.1.2"
+version = "0.1.3"
 description = "حساب الجمل"
 authors = ["Ibrahim bin Salah"]
 edition = "2021"
