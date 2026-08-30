@@ -16,6 +16,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Install NSIS for the EXE installer
+        run: choco install nsis -y --no-progress
       - run: npm run tauri:build:windows
       - uses: actions/upload-artifact@v4
         with:
