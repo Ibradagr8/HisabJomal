@@ -1,7 +1,7 @@
 [package]
-name = "hisab-jomal"
-version = "0.1.6"
-description = "حساب الجمل"
+name = "atlas-al-huruf"
+version = "0.1.7"
+description = "أطلس الحروف"
 authors = ["Ibrahim bin Salah"]
 edition = "2021"
 

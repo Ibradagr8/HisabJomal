@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Hisab Jomal",
-  "version": "0.1.6",
+  "productName": "Atlas Al Huruf",
+  "version": "0.1.7",
   "identifier": "com.ibrahimsalah.hisabjomal",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "حساب الجمل",
+        "title": "أطلس الحروف",
         "width": 1200,
         "height": 820,
         "minWidth": 360,
@@ -28,6 +28,6 @@
     "targets": ["msi", "nsis"],
     "icon": ["icons/icon.ico", "icons/icon.png"],
     "category": "Utility",
-    "shortDescription": "أداة عربية لحساب الجمل المشرقي"
+    "shortDescription": "أداة عربية للأسماء وحساب الحروف والتراث"
   }
 }

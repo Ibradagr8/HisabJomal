@@ -81,21 +81,4 @@ export function compareCelestial(first, second) {
   if (first.zodiac && second.zodiac) zodiac = first.zodiac[0] === second.zodiac[0] ? 'تطابق البرج الحسابي.' : first.zodiac[1] === second.zodiac[1] ? `اختلاف مع اتحاد العنصر: ${first.zodiac[1]}.` : 'اختلاف كامل بين البرجين الحسابيين.';
   return { planet, zodiac };
 }
-export function makeMagicSquare(n, target) {
-  let grid;
-  if (n % 2) grid = oddSquare(n); else grid = doublyEvenSquare(n);
-  const C = n * (n * n + 1) / 2;
-  let best = null;
-  for (let d = 1; d <= Math.max(2, Math.ceil((target || C) / n)); d++) {
-    const approxA = Math.max(1, Math.round(((target || C) - (C - n) * d) / n));
-    for (const a of [approxA - 1, approxA, approxA + 1].filter(x => x >= 1)) {
-      const M = n * a + (C - n) * d;
-      const candidate = { a, d, M, delta: (target || 0) - M };
-      if (!best || Math.abs(candidate.delta) < Math.abs(best.delta) || (Math.abs(candidate.delta) === Math.abs(best.delta) && (candidate.d < best.d || (candidate.d === best.d && candidate.a < best.a)))) best = candidate;
-    }
-  }
-  return { n, C, ...best, grid: grid.map(row => row.map(v => best.a + (v - 1) * best.d)) };
-}
-function oddSquare(n) { const g = Array.from({ length: n }, () => Array(n).fill(0)); let r = 0, c = Math.floor(n / 2); for (let v = 1; v <= n * n; v++) { g[r][c] = v; const nr = (r - 1 + n) % n, nc = (c + 1) % n; if (g[nr][nc]) r = (r + 1) % n; else { r = nr; c = nc; } } return g; }
-function doublyEvenSquare(n) { const g = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => r * n + c + 1)); return g.map((row, r) => row.map((v, c) => ((r % 4 === c % 4) || ((r % 4) + (c % 4) === 3)) ? n * n + 1 - v : v)); }
 export function formatNumber(num) { return new Intl.NumberFormat('ar-EG').format(num || 0); }

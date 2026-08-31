@@ -71,6 +71,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-al-huruf"
+version = "0.1.7"
+dependencies = [
+ "tauri",
+ "tauri-build",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1230,14 +1238,6 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-
-[[package]]
-name = "hisab-jomal"
-version = "0.1.6"
-dependencies = [
- "tauri",
- "tauri-build",
-]
 
 [[package]]
 name = "html5ever"
