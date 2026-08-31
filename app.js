@@ -298,7 +298,10 @@
   function suggestions() {
     const father = profile(state.father), mother = profile(state.mother);
     const parents = [father, mother].filter((p) => p.count);
-    const list = (names2) => names2.filter((x) => x !== state.father && x !== state.mother).map((x) => ({ name: x, ...suggestionScore(x, parents) })).filter(Boolean).sort((a, b) => b.score - a.score || a.p.count - b.p.count || a.name.localeCompare(b.name, "ar"));
+    const list = (names2) => names2.filter((x) => x !== state.father && x !== state.mother).map((x) => {
+      const match = suggestionScore(x, parents);
+      return match ? { name: x, ...match } : null;
+    }).filter(Boolean).sort((a, b) => b.score - a.score || a.p.count - b.p.count || a.name.localeCompare(b.name, "ar"));
     const males2 = list(maleNames), females2 = list(femaleNames);
     return `<section class="card"><h2>\u0627\u0642\u062A\u0631\u0627\u062D \u0627\u0633\u0645 \u0645\u0648\u0644\u0648\u062F</h2><p class="notice">\u0627\u0642\u062A\u0631\u0627\u062D \u062D\u0633\u0627\u0628\u064A \u062A\u0631\u0627\u062B\u064A \u0627\u062E\u062A\u064A\u0627\u0631\u064A\u061B \u0627\u0644\u0645\u0639\u0646\u0649 \u0627\u0644\u062D\u0633\u0646 \u0648\u0633\u0646\u0651\u0629 \u0627\u0644\u062A\u0633\u0645\u064A\u0629 \u0645\u0642\u062F\u0645\u0627\u0646\u060C \u0648\u0644\u064A\u0633 \u062D\u0643\u0645\u064B\u0627 \u0634\u0631\u0639\u064A\u064B\u0627.</p><div class="split"><input data-field="father" value="${esc(state.father)}" placeholder="\u0627\u0633\u0645 \u0627\u0644\u0623\u0628"><input data-field="mother" value="${esc(state.mother)}" placeholder="\u0627\u0633\u0645 \u0627\u0644\u0623\u0645"></div><div class="actions"><button class="btn" data-parent-example>\u0645\u062D\u0645\u062F \xD7 \u0641\u0627\u0637\u0645\u0629</button><button class="btn" data-clear="parents">\u0645\u0633\u062D</button></div>${parents.length ? `<div class="split" style="margin-top:16px"><div><h3>\u0630\u0643\u0648\u0631 \u0645\u062A\u0648\u0627\u0641\u0642\u0648\u0646 <span class="tag">${num(males2.length)}</span></h3>${males2.slice(0, state.suggestionLimit).map((x) => `<div class="metric"><button class="btn copy-name" data-copy-name="${x.name}">${x.name}</button><span>${x.p.leaders.join(" / ")} \xB7 ${x.labels.join(" + ")}</span></div>`).join("")}</div><div><h3>\u0625\u0646\u0627\u062B \u0645\u062A\u0648\u0627\u0641\u0642\u0627\u062A <span class="tag">${num(females2.length)}</span></h3>${females2.slice(0, state.suggestionLimit).map((x) => `<div class="metric"><button class="btn copy-name" data-copy-name="${x.name}">${x.name}</button><span>${x.p.leaders.join(" / ")} \xB7 ${x.labels.join(" + ")}</span></div>`).join("")}</div></div>${males2.length > state.suggestionLimit || females2.length > state.suggestionLimit ? '<div class="actions"><button class="btn" data-more-names>\u0639\u0631\u0636 \u0627\u0644\u0645\u0632\u064A\u062F</button></div>' : ""}` : '<p class="muted">\u0623\u062F\u062E\u0644 \u0627\u0633\u0645 \u0623\u062D\u062F \u0627\u0644\u0648\u0627\u0644\u062F\u064A\u0646 \u0623\u0648 \u0643\u0644\u064A\u0647\u0645\u0627 \u0644\u0639\u0631\u0636 \u0627\u0644\u0645\u0642\u062A\u0631\u062D\u0627\u062A.</p>'}<span class="tag">NAME-SUGGEST-1.0 \xB7 TABIA-MASHRIQI-1.0</span></section>`;
   }
@@ -366,16 +369,18 @@
       persist();
       render();
     });
-    document.querySelectorAll("[data-field]").forEach((e) => {
-      const update = () => {
-        const cursor = e.target.selectionStart;
-        const selector = `[data-field="${e.dataset.field}"]`;
-        state[e.dataset.field] = e.target.value;
+    document.querySelectorAll("[data-field]").forEach((field) => {
+      const update = (event) => {
+        const input = event.currentTarget;
+        const cursor = typeof input.selectionStart === "number" ? input.selectionStart : null;
+        const selector = `[data-field="${input.dataset.field}"]`;
+        state[input.dataset.field] = input.value;
         persist();
-        redrawKeepingFocus(selector, cursor);
+        if (input.tagName === "SELECT") render();
+        else redrawKeepingFocus(selector, cursor);
       };
-      e.addEventListener("input", update);
-      e.addEventListener("change", update);
+      field.addEventListener("input", update);
+      field.addEventListener("change", update);
     });
     document.querySelector("#awfaqText")?.addEventListener("input", (e) => {
       const cursor = e.target.selectionStart;
