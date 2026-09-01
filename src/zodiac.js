@@ -34,9 +34,27 @@ export function zodiacFromNumber(number) {
 
 export function zodiacFromDate(value) {
   if (!value) return null;
-  const [, monthRaw, dayRaw] = String(value).split('-').map(Number);
-  if (!monthRaw || !dayRaw) return null;
-  const md = monthRaw * 100 + dayRaw;
+  const [year, month, day] = String(value).split('-');
+  const result = parseBirthDate(day, month, year);
+  return result.status === 'valid' ? result.sign : null;
+}
+
+export const ARABIC_MONTHS = Object.freeze([
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+]);
+
+export function westernDigits(value = '') {
+  return String(value)
+    .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+}
+
+export function zodiacFromMonthDay(monthRaw, dayRaw) {
+  const month = Number(westernDigits(monthRaw));
+  const day = Number(westernDigits(dayRaw));
+  if (!Number.isInteger(month) || !Number.isInteger(day) || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const md = month * 100 + day;
   const number = md >= 321 && md <= 419 ? 1
     : md >= 420 && md <= 520 ? 2
     : md >= 521 && md <= 620 ? 3
@@ -52,13 +70,45 @@ export function zodiacFromDate(value) {
   return zodiacFromNumber(number);
 }
 
+export function parseBirthDate(dayRaw, monthRaw, yearRaw, today = new Date()) {
+  const dayText = westernDigits(dayRaw).replace(/\D/g, '');
+  const monthText = westernDigits(monthRaw).replace(/\D/g, '');
+  const yearText = westernDigits(yearRaw).replace(/\D/g, '').slice(0, 4);
+  if (!dayText && !monthText && !yearText) return { status: 'empty', sign: null };
+  if (!dayText || !monthText || yearText.length !== 4) return { status: 'incomplete', sign: null };
+  const day = Number(dayText); const month = Number(monthText); const year = Number(yearText);
+  const currentYear = today.getFullYear();
+  if (year < 1000 || year > currentYear || month < 1 || month > 12 || day < 1 || day > 31) return { status: 'invalid', sign: null };
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return { status: 'invalid', sign: null };
+  const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  if (date.getTime() > todayUtc) return { status: 'future', sign: null };
+  return {
+    status: 'valid',
+    sign: zodiacFromMonthDay(month, day),
+    day: String(day), month: String(month), year: String(year),
+    iso: `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+  };
+}
+
 export const ZODIAC_SOURCES = Object.freeze([
-  ['SCIAMVS', 'نشر أكاديمي لطريقة الأسماء والباقي ١–١٢ وبيوت الكواكب', 'https://sciamvs.org/files/SCIAMVS_19_167-200_Thomann.pdf'],
+  ['مختبر الدفع النفاث وناسا', 'مرجع للتحقق من مواضع الشمس والقمر والكواكب بحسب الزمن والموقع', 'https://ssd.jpl.nasa.gov/horizons/manual.html'],
+  ['المرصد البحري الأمريكي', 'الزمن النجمي والبيانات الفلكية اللازمة لحساب الزوايا السماوية', 'https://aa.usno.navy.mil/data/siderealtime'],
+  ['هيئة أرقام الإنترنت المخصصة', 'قاعدة المناطق الزمنية التاريخية والتوقيت الصيفي', 'https://www.iana.org/time-zones'],
+  ['محرك الحساب الفلكي', 'المحرك الفلكي المفتوح المستخدم للحساب المحلي داخل التطبيق', 'https://github.com/cosinekitty/astronomy'],
+  ['الموسوعة الفلكية', 'شرح بنية الخريطة: الكواكب والأبراج والبيوت والزوايا', 'https://www.astro.com/astrology/in_intro_e.htm'],
+  ['الموسوعة الفلكية · الطالع', 'تعريف الطالع واعتماده على وقت ومكان الميلاد', 'https://www.astro.com/astrowiki/en/Asc'],
+  ['دورية تاريخ العلوم الرياضية', 'نشر أكاديمي لطريقة الأسماء والباقي ١–١٢ وبيوت الكواكب', 'https://sciamvs.org/files/SCIAMVS_19_167-200_Thomann.pdf'],
   ['مكتبة قطر الرقمية', 'مخطوط عربي: الاسم واسم الأم، والطبائع والكيفيات', 'https://www.qdl.qa/en/archive/81055/vdc_100088125470.0x00000e'],
   ['المكتبة الوطنية الأمريكية للطب', 'توثيق استعمال قيم الأسماء والبروج في مخطوطات الفراسة', 'https://sites.wip.nlm.nih.gov/hmd/arabic/physiognomy2.html'],
   ['متحف المتروبوليتان', 'الفلك والتنجيم وصور الأبراج في العالم الإسلامي الوسيط', 'https://www.metmuseum.org/essays/astronomy-and-astrology-in-the-medieval-islamic-world'],
-  ['متحف Getty', 'الفترات الحديثة للأبراج وسياقها التاريخي الوسيط', 'https://www.getty.edu/news/written-in-the-stars-astronomy-and-astrology-in-medieval-manuscripts/'],
+  ['متحف جيتي', 'الفترات الحديثة للأبراج وسياقها التاريخي الوسيط', 'https://www.getty.edu/news/written-in-the-stars-astronomy-and-astrology-in-medieval-manuscripts/'],
   ['الجمعية الأمريكية لعلم النفس', 'تعريف التنجيم وغياب الدليل على تأثيره في الشخصية', 'https://dictionary.apa.org/astrology'],
-  ['PubMed', 'اختبار مزدوج التعمية لم يجد قدرة للخرائط الفلكية على وصف الشخصية', 'https://pubmed.ncbi.nlm.nih.gov/18649494/'],
+  ['المكتبة الطبية الأمريكية', 'اختبار مزدوج التعمية لم يجد قدرة للخرائط الفلكية على وصف الشخصية', 'https://pubmed.ncbi.nlm.nih.gov/18649494/'],
   ['دار الإفتاء المصرية', 'فتوى رسمية بشأن الاعتقاد بالأبراج وقراءة الطالع', 'https://www.dar-alifta.org/en/fatwa/details/7985/are-muslims-allowed-to-believe-in-palmistry-and-horoscopes'],
 ]);
+
+const sourceUrls = new Set(ZODIAC_SOURCES.map(([, , url]) => url));
+export function isAllowedSourceUrl(url) {
+  try { return new URL(url).protocol === 'https:' && sourceUrls.has(url); } catch { return false; }
+}

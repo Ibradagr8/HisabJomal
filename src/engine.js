@@ -57,12 +57,24 @@ export function compareProfiles(first, second, firstRole = 'طالب') {
   if (!first.mod9 || !second.mod9) return null;
   const same = first.mod9 === second.mod9;
   const bothOdd = first.mod9 % 2 && second.mod9 % 2;
-  let winner;
+  const secondRole = firstRole === 'طالب' ? 'مطلوب' : 'طالب';
+  let winnerRole;
+  let winnerIndex;
   let reason;
-  if (same) { winner = bothOdd ? firstRole : (firstRole === 'طالب' ? 'مطلوب' : 'طالب'); reason = bothOdd ? 'باقيان متساويان فرديان: الطالب يغلب' : 'باقيان متساويان زوجيان: المطلوب يغلب'; }
-  else if ((first.mod9 % 2) === (second.mod9 % 2)) { winner = first.mod9 < second.mod9 ? firstRole : (firstRole === 'طالب' ? 'مطلوب' : 'طالب'); reason = 'باقيان مختلفان من نفس الزوجية: الأصغر يغلب'; }
-  else { winner = first.mod9 > second.mod9 ? firstRole : (firstRole === 'طالب' ? 'مطلوب' : 'طالب'); reason = 'باقيان مختلفا الزوجية: الأكبر يغلب'; }
-  return { winner, reason };
+  if (same) {
+    winnerRole = bothOdd ? 'طالب' : 'مطلوب';
+    winnerIndex = firstRole === winnerRole ? 0 : 1;
+    reason = bothOdd ? 'باقيان متساويان فرديان: الطالب يغلب' : 'باقيان متساويان زوجيان: المطلوب يغلب';
+  } else if ((first.mod9 % 2) === (second.mod9 % 2)) {
+    winnerIndex = first.mod9 < second.mod9 ? 0 : 1;
+    winnerRole = winnerIndex === 0 ? firstRole : secondRole;
+    reason = 'باقيان مختلفان من نفس الزوجية: الأصغر يغلب';
+  } else {
+    winnerIndex = first.mod9 > second.mod9 ? 0 : 1;
+    winnerRole = winnerIndex === 0 ? firstRole : secondRole;
+    reason = 'باقيان مختلفا الزوجية: الأكبر يغلب';
+  }
+  return { winner: winnerRole, winnerRole, winnerIndex, reason };
 }
 export function compareElements(first, second) {
   if (!first.leaders.length || !second.leaders.length || first.leaders.length > 1 || second.leaders.length > 1) return { kind: 'مركّب', text: 'متعادل / مركّب — يُقرأ توزيع الطبائع بدل حكم واحد.' };

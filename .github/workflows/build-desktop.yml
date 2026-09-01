@@ -12,17 +12,19 @@ jobs:
   bundle-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Run automated tests and build the web interface
+        run: npm run check
       - name: Install NSIS for the EXE installer
         run: choco install nsis -y --no-progress
       - run: npm run tauri:build:windows
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: atlas-al-huruf-windows-exe
           path: src-tauri/target/**/bundle/nsis/*.exe

@@ -1,7 +1,22 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "صلاحيات نافذة حساب الجمل الافتراضية",
+  "description": "صلاحيات نافذة أطلس الحروف الافتراضية",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://sciamvs.org/files/SCIAMVS_19_167-200_Thomann.pdf" },
+        { "url": "https://www.qdl.qa/en/archive/81055/vdc_100088125470.0x00000e" },
+        { "url": "https://sites.wip.nlm.nih.gov/hmd/arabic/physiognomy2.html" },
+        { "url": "https://www.metmuseum.org/essays/astronomy-and-astrology-in-the-medieval-islamic-world" },
+        { "url": "https://www.getty.edu/news/written-in-the-stars-astronomy-and-astrology-in-medieval-manuscripts/" },
+        { "url": "https://dictionary.apa.org/astrology" },
+        { "url": "https://pubmed.ncbi.nlm.nih.gov/18649494/" },
+        { "url": "https://www.dar-alifta.org/en/fatwa/details/7985/are-muslims-allowed-to-believe-in-palmistry-and-horoscopes" }
+      ]
+    }
+  ]
 }
