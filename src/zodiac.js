@@ -45,12 +45,27 @@ export const ARABIC_MONTHS = Object.freeze([
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ]);
 
+export function isLeapYear(yearRaw) {
+  const year = Number(westernDigits(yearRaw));
+  return Number.isInteger(year) && year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
 export function daysInMonth(monthRaw, yearRaw = '') {
   const month = Number(westernDigits(monthRaw));
   if (!Number.isInteger(month) || month < 1 || month > 12) return 31;
-  const parsedYear = Number(westernDigits(yearRaw));
-  const year = Number.isInteger(parsedYear) && parsedYear >= 1000 ? parsedYear : 2000;
+  const yearText = westernDigits(yearRaw).replace(/\D/g, '').slice(0, 4);
+  // قبل اكتمال السنة نُظهر 29 في فبراير حتى لا يُخفى الخيار، ثم يُتحقق بعد إدخال السنة.
+  if (month === 2 && yearText.length !== 4) return 29;
+  const year = Number(yearText);
+  if (!Number.isInteger(year) || year < 1000) return month === 2 ? 29 : new Date(Date.UTC(2000, month, 0)).getUTCDate();
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+export function visibleDayCount(monthRaw, yearRaw, selectedDayRaw) {
+  const actual = daysInMonth(monthRaw, yearRaw);
+  const selected = Number(westernDigits(selectedDayRaw));
+  if (Number.isInteger(selected) && selected > actual) return selected;
+  return actual;
 }
 
 export function westernDigits(value = '') {
@@ -86,10 +101,12 @@ export function parseBirthDate(dayRaw, monthRaw, yearRaw, today = new Date()) {
   if (!dayText && !monthText && !yearText) return { status: 'empty', sign: null };
   if (!dayText || !monthText || yearText.length !== 4) return { status: 'incomplete', sign: null };
   const day = Number(dayText); const month = Number(monthText); const year = Number(yearText);
-  const currentYear = today.getFullYear();
-  if (year < 1000 || year > currentYear || month < 1 || month > 12 || day < 1 || day > 31) return { status: 'invalid', sign: null };
+  if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) return { status: 'invalid', sign: null };
   const date = new Date(Date.UTC(year, month - 1, day));
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return { status: 'invalid', sign: null };
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    if (month === 2 && day === 29) return { status: 'non-leap', sign: null, day: String(day), month: String(month), year: String(year) };
+    return { status: 'invalid', sign: null };
+  }
   const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
   if (date.getTime() > todayUtc) return { status: 'future', sign: null };
   return {

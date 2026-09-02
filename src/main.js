@@ -3,13 +3,18 @@ import { isTauri } from '@tauri-apps/api/core';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { ABJAD, ELEMENTS, PLANETS, ZODIAC, analyze, compareCelestial, compareElements, compareProfiles, formatNumber, profile } from './engine.js';
 import { femaleNames, maleNames } from './data.js';
-import { assessBabyName, assessBabyProfile, babyVerdict, suggestionEmptyMessage } from './names-engine.js';
+import { assessBabyName, assessBabyProfile, babyVerdict, buildIndexedNames, suggestionEmptyMessage } from './names-engine.js';
 import { BIRTH_CITIES, HOUSE_MEANINGS, calculateNatalChart, signReading } from './natal-chart.js';
+import { createNatalChartCache } from './natal-cache.js';
 import { copyText, escapeHtml } from './platform.js';
+import { runReferenceChecks } from './self-tests.js';
+import { openTrustedSource } from './sources.js';
 import { createState, parseStoredState } from './state.js';
-import { ARABIC_MONTHS, ELEMENT_GUIDE, QUALITY_GUIDE, ZODIAC_DETAILS, ZODIAC_SOURCES, daysInMonth, isAllowedSourceUrl, parseBirthDate, westernDigits, zodiacFromDate, zodiacFromNumber } from './zodiac.js';
+import { restoredDisclosures, detailsShouldStartOpen, planetDisclosureId } from './ui-state.js';
+import { ARABIC_MONTHS, ELEMENT_GUIDE, QUALITY_GUIDE, ZODIAC_DETAILS, ZODIAC_SOURCES, visibleDayCount, isAllowedSourceUrl, parseBirthDate, westernDigits, zodiacFromDate, zodiacFromNumber } from './zodiac.js';
 
 function readSharedState() {
+  // توافق خلفي: روابط ?state= القديمة ما زالت تُقرأ، بدون زر لإنشاء رابط جديد.
   try {
     const encoded = new URLSearchParams(location.search).get('state');
     return encoded ? JSON.parse(decodeURIComponent(escape(atob(encoded))) || '{}') : {};
@@ -19,28 +24,29 @@ let stored = {};
 try { stored = parseStoredState(localStorage.getItem('hisab-jomal-state')); } catch { stored = {}; }
 const state = createState(stored, readSharedState());
 const app = document.querySelector('#app');
-const indexedNames = Object.freeze({
-  male: maleNames.map(name => ({ name, p:profile(name) })),
-  female: femaleNames.map(name => ({ name, p:profile(name) })),
-});
+const indexedNames = Object.freeze(buildIndexedNames(maleNames, femaleNames, profile));
+const natalCache = createNatalChartCache(calculateNatalChart);
 const suggestionCache = new Map();
+let lastDetailMode = state.detailMode;
+let pendingFocusSelector = '';
 
 function persist() { try { localStorage.setItem('hisab-jomal-state', JSON.stringify(state)); return true; } catch { return false; } }
 const esc = escapeHtml;
 function toast(message) { document.querySelector('.toast')?.remove(); const e = document.createElement('div'); e.className = 'toast'; e.textContent = message; document.body.append(e); setTimeout(() => e.remove(), 2200); }
-async function copy(text) { toast(await copyText(text) ? 'تم النسخ' : 'تعذّر النسخ'); }
+async function copy(text, { silent = false } = {}) {
+  const ok = await copyText(text);
+  if (!silent) toast(ok ? 'تم النسخ' : 'تعذّر النسخ');
+  return ok;
+}
 async function openExternalSource(url) {
-  if (!isAllowedSourceUrl(url)) return toast('رابط المصدر غير معتمد');
-  try {
-    if (isTauri()) await openUrl(url);
-    else {
-      const popup = window.open(url, '_blank', 'noopener,noreferrer');
-      if (!popup) throw new Error('popup blocked');
-    }
-  } catch {
-    await copy(url);
-    toast('تعذّر فتح المتصفح؛ تم نسخ رابط المصدر');
-  }
+  const result = await openTrustedSource(url, {
+    isAllowed: isAllowedSourceUrl,
+    isTauriApp: isTauri,
+    openUrl,
+    openPopup: href => window.open(href, '_blank', 'noopener,noreferrer'),
+    copyText,
+  });
+  if (result.message) toast(result.message);
 }
 function setSection(id) { state.section = id; persist(); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function num(n) { return formatNumber(n); }
@@ -48,7 +54,7 @@ function profileCard(p) { const total = p.count || 1; return `<div class="metric
 function calculator() {
   const result = analyze(state.text); const target = parseArabicNumber(state.target); const percent = target > 0 ? Math.min(100, result.total / target * 100) : 0;
   const wordDetails = result.words.length ? result.words.map((w,index) => `<details class="word" data-disclosure="calculator-word-${index}"><summary><b>${esc(w.word)}</b><span>${num(w.total)}</span></summary><div class="letters">${w.letters.map(l => `<span class="letter">${esc(l.raw)}${l.raw !== l.normalized ? ` ← ${esc(l.normalized)}` : ''} = ${num(l.value)}</span>`).join('')}</div></details>`).join('') : '<p class="muted">ستظهر الكلمات والحروف المحتسبة هنا.</p>';
-  return `<div class="grid calculator-grid"><main><section class="card calculator-main"><div class="section-heading"><div><h2>الحاسبة</h2><p class="muted">اكتب أي نص عربي، وستظهر النتيجة فورًا وفق حساب الجمل المشرقي.</p></div><span class="tag">حساب الجمل المشرقي</span></div><textarea id="text" rows="4" placeholder="اكتب العبارة هنا…">${esc(state.text)}</textarea><div class="chips">${['بسم الله الرحمن الرحيم','محمد','داود'].map(x => `<button class="chip" data-example="${x}">${x}</button>`).join('')}</div><div class="split calculator-target"><div><label class="muted">الرقم المستهدف (اختياري)</label><input id="target" inputmode="numeric" value="${esc(state.target)}" placeholder="مثال: ٧٨٦"></div><div class="actions"><button class="btn" data-send="names">إرسال إلى الأسماء</button></div></div>${target > 0 ? `<div class="result"><div class="metric"><span>التقدم نحو الهدف</span><b>${num(Math.round(percent))}%</b></div><div class="bar"><i style="width:${percent}%"></i></div>${result.total === target ? '<b>تطابق تام مع الرقم المستهدف</b>' : ''}</div>` : ''}<div class="actions streamlined-actions"><button class="btn" data-clear="calculator">مسح</button></div></section><details class="card progressive-section" data-disclosure="calculator-details" ${state.detailMode === 'full' ? 'open' : ''}><summary><span><small>التفاصيل</small><b>تفصيل الكلمات والحروف</b></span><i>⌄</i></summary><div class="progressive-content">${wordDetails}</div></details></main><aside><section class="card total-card"><span class="muted">المجموع الحالي</span><div class="hero-number">${num(result.total)}</div><span class="muted">${num(result.count)} حرفًا محتسبًا</span></section></aside></div>`;
+  return `<div class="grid calculator-grid"><main><section class="card calculator-main"><div class="section-heading"><div><h2>الحاسبة</h2><p class="muted">اكتب أي نص عربي، وستظهر النتيجة فورًا وفق حساب الجمل المشرقي.</p></div><span class="tag">حساب الجمل المشرقي</span></div><textarea id="text" rows="4" placeholder="اكتب العبارة هنا…">${esc(state.text)}</textarea><div class="chips">${['بسم الله الرحمن الرحيم','محمد','داود'].map(x => `<button class="chip" data-example="${x}">${x}</button>`).join('')}</div><div class="split calculator-target"><div><label class="muted">الرقم المستهدف (اختياري)</label><input id="target" inputmode="numeric" value="${esc(state.target)}" placeholder="مثال: ٧٨٦"></div><div class="actions"><button class="btn" data-send="names">إرسال إلى الأسماء</button></div></div>${target > 0 ? `<div class="result"><div class="metric"><span>التقدم نحو الهدف</span><b>${num(Math.round(percent))}%</b></div><div class="bar"><i style="width:${percent}%"></i></div>${result.total === target ? '<b>تطابق تام مع الرقم المستهدف</b>' : ''}</div>` : ''}<div class="actions streamlined-actions"><button class="btn" data-clear="calculator">مسح</button></div></section><details class="card progressive-section" data-disclosure="calculator-details" ${detailsShouldStartOpen(state.detailMode) ? 'open' : ''}><summary><span><small>التفاصيل</small><b>تفصيل الكلمات والحروف</b></span><i>⌄</i></summary><div class="progressive-content">${wordDetails}</div></details></main><aside><section class="card total-card"><span class="muted">المجموع الحالي</span><div class="hero-number">${num(result.total)}</div><span class="muted">${num(result.count)} حرفًا محتسبًا</span></section></aside></div>`;
 }
 function comparePersonCard(label, role, name, motherName, p, isWinner) {
   return `<article class="compare-person ${p.count ? '' : 'is-empty'} ${isWinner ? 'is-winner' : ''}"><div class="compare-person-top"><span>${esc(label)} · ${esc(role)}</span>${isWinner ? '<b class="winner-chip">الغالب</b>' : ''}</div><h3>${esc(name.trim() || 'الاسم غير مُدخل')}</h3>${motherName ? `<small>مع اسم الأم: ${esc(motherName)}</small>` : ''}${p.count ? `<div class="compare-total"><strong>${num(p.total)}</strong><span>المجموع</span></div><div class="person-stats"><span>الباقي ÷٩ <b>${num(p.mod9)}</b></span><span>الطبع <b>${p.leaders.join(' / ') || '—'}</b></span><span>البرج <b>${p.zodiac ? p.zodiac[0] : '—'}</b></span></div>` : '<p>أدخل الاسم لعرض بياناته.</p>'}</article>`;
@@ -203,7 +209,7 @@ function natalChartResult(chart) {
   const full = state.detailMode === 'full';
   const synthesis = `<div class="section-heading"><div><span class="eyebrow">قراءة مركّبة</span><h2>كيف تتداخل أجزاء الشخصية رمزيًا؟</h2><p class="muted">كل استنتاج يوضح العناصر التي بُني عليها.</p></div><span class="precision-badge symbolic">قراءة رمزية غير علمية</span></div>${personalitySynthesis(chart)}`;
   const angleContent = chart.angles ? `<div class="angle-grid">${angles}</div>` : '<div class="missing-time"><span>⌁</span><div><h3>الطالع والبيوت غير محسوبين</h3><p>فعّل «وقت الميلاد معروف» وأدخل الساعة والدقيقة لتظهر المحاور والبيوت.</p></div></div>';
-  const planets = `<p class="muted">الدرجة والبرج بيانات حسابية؛ المعنى النصي تفسير رمزي.</p><div class="table-wrap"><table class="planet-table"><thead><tr><th>الجرم</th><th>الموضع</th><th>البيت</th><th>الحركة</th></tr></thead><tbody>${planetsTable}</tbody></table></div><div class="planet-readings">${secondary.map(item=>`<details><summary><span>${item.symbol}</span><div><small>${item.role}</small><b>${item.name} في ${item.sign.name}${item.house ? ` · البيت ${num(item.house)}` : ''}</b></div></summary><p>${signReading(item)}</p>${item.house ? `<p class="house-note"><b>مجال الظهور الرمزي:</b> ${HOUSE_MEANINGS[item.house-1]}</p>` : ''}</details>`).join('')}</div>`;
+  const planets = `<p class="muted">الدرجة والبرج بيانات حسابية؛ المعنى النصي تفسير رمزي.</p><div class="table-wrap"><table class="planet-table"><thead><tr><th>الجرم</th><th>الموضع</th><th>البيت</th><th>الحركة</th></tr></thead><tbody>${planetsTable}</tbody></table></div><div class="planet-readings">${secondary.map(item=>`<details data-disclosure="${planetDisclosureId(item.key)}"><summary><span>${item.symbol}</span><div><small>${item.role}</small><b>${item.name} في ${item.sign.name}${item.house ? ` · البيت ${num(item.house)}` : ''}</b></div></summary><p>${signReading(item)}</p>${item.house ? `<p class="house-note"><b>مجال الظهور الرمزي:</b> ${HOUSE_MEANINGS[item.house-1]}</p>` : ''}</details>`).join('')}</div>`;
   return `<section class="natal-result"><div class="result-ribbon"><div><span class="eyebrow">ملخص الخريطة</span><h2>خريطة الميلاد الرمزية</h2><p>${esc(chart.city.label)} · ${chart.date.toLocaleString('ar-EG',{dateStyle:'long',timeStyle:'short',timeZone:chart.city.zone})}</p></div><div class="accuracy-stack"><span class="precision-badge">دقيق حسابيًا</span><small>${chart.accuracy}</small></div></div>
   <div class="big-three"><div class="section-heading"><div><span class="eyebrow">الثلاثة الكبار</span><h2>الشمس والقمر والطالع</h2></div><span class="tag">البروج الاستوائية · البيوت الكاملة</span></div><div class="big-three-grid">${bigThreeCard(sun,'البرج الشمسي',chart)}${bigThreeCard(moon,'البرج القمري',chart)}${bigThreeCard(asc,'الطالع',chart)}</div></div>
   <div class="chart-layout"><section class="card wheel-card"><div class="section-heading"><div><h2>عجلة الخريطة</h2><p class="muted">مواضع الأجرام والزوايا الرئيسية وقت الميلاد.</p></div></div>${natalWheel(chart)}</section><section class="card balance-card"><h2>بصمة الخريطة</h2><h3>العناصر</h3>${balanceBars(chart.elements)}<h3>الكيفيات</h3>${balanceBars(chart.qualities)}<div class="moon-phase"><span>☾</span><div><small>طور القمر</small><b>${chart.moonPhase.name}</b><p>إضاءة تقريبية ${num(Math.round(chart.moonPhase.illumination*100))}%</p></div></div></section></div>
@@ -214,23 +220,23 @@ function zodiac() {
   const heritage = heritageZodiacResult();
   const birth = parseBirthDate(state.birthDay, state.birthMonth, state.birthYear);
   const sources = ZODIAC_SOURCES.map(([institution, title, url], index) => `<a class="source-link" href="${esc(url)}" data-source-url="${esc(url)}" rel="noreferrer"><span>${num(index + 1)}</span><div><strong>${institution}</strong><small>${title}</small></div><b aria-hidden="true">↗</b></a>`).join('');
-  const heritageResult = heritage.sign ? `<section class="zodiac-result"><div class="zodiac-emblem"><span>${heritage.sign.symbol}</span><small>الباقي ${num(heritage.remainder)} من ١٢</small></div><div class="zodiac-reading"><span class="eyebrow">البرج الحرفي التراثي</span><h2>${heritage.sign.name}</h2><p>${heritage.sign.summary}</p><div class="zodiac-facts"><span>العنصر<b>${heritage.sign.element}</b></span><span>الكيفية<b>${heritage.sign.quality}</b></span><span>الكوكب المنسوب تراثيًا<b>${heritage.sign.ruler}</b></span></div><div class="calculation-strip"><span>${esc(state.zodiacName)} <b>${num(heritage.person.total)}</b></span><i>+</i><span>${state.zodiacMother.trim() ? esc(state.zodiacMother) : 'اسم الأم غير مُدخل'} <b>${state.zodiacMother.trim() ? num(heritage.mother.total) : '—'}</b></span><i>=</i><span>المجموع <b>${num(heritage.total)}</b></span></div>${!state.zodiacMother.trim() ? '<p class="partial-note">هذه نتيجة جزئية من الاسم وحده؛ الطريقة التراثية الموثّقة تذكر جمع الاسم مع اسم الأم.</p>' : ''}<div class="trait-columns"><div><h3>رموز إيجابية محتملة</h3>${traitList(heritage.sign.strengths)}</div><div><h3>مساحات للتوازن</h3>${traitList(heritage.sign.balance)}</div></div><p class="reading-note">هذا الحساب الحرفي منفصل تمامًا عن الشمس والقمر والطالع، وليس تشخيصًا للشخصية.</p><div class="actions"><button class="btn" data-clear="heritage-zodiac">مسح الحساب الحرفي</button></div></div></section>` : '<section class="zodiac-empty"><span>١٢</span><div><b>اكتب الاسم لتظهر القراءة الحرفية</b><p>هذه الطريقة منفصلة عن خريطة الميلاد الموجودة بالأعلى.</p></div></section>';
-  const heritageDisplay = heritageResult;
+  const heritageResult = heritage.sign ? `<section class="zodiac-result"><div class="zodiac-emblem"><span>${heritage.sign.symbol}</span><small>الباقي ${num(heritage.remainder)} من ١٢</small></div><div class="zodiac-reading"><span class="eyebrow">البرج الحرفي التراثي</span><h2>${heritage.sign.name}</h2><p>${heritage.sign.summary}</p><div class="zodiac-facts"><span>العنصر<b>${heritage.sign.element}</b></span><span>الكيفية<b>${heritage.sign.quality}</b></span><span>الكوكب المنسوب تراثيًا<b>${heritage.sign.ruler}</b></span></div><div class="calculation-strip"><span>${esc(state.zodiacName)} <b>${num(heritage.person.total)}</b></span><i>+</i><span>${state.zodiacMother.trim() ? esc(state.zodiacMother) : 'اسم الأم غير مُدخل'} <b>${state.zodiacMother.trim() ? num(heritage.mother.total) : '—'}</b></span><i>=</i><span>المجموع <b>${num(heritage.total)}</b></span></div>${!state.zodiacMother.trim() ? '<p class="partial-note">هذه نتيجة جزئية من الاسم وحده؛ الطريقة التراثية الموثّقة تذكر جمع الاسم مع اسم الأم.</p>' : ''}<div class="trait-columns"><div><h3>رموز إيجابية محتملة</h3>${traitList(heritage.sign.strengths)}</div><div><h3>مساحات للتوازن</h3>${traitList(heritage.sign.balance)}</div></div><p class="reading-note">هذا الحساب الحرفي منفصل تمامًا عن الشمس والقمر والطالع، وليس تشخيصًا للشخصية.</p><div class="actions"><button class="btn" data-clear="heritage-zodiac">مسح الحساب الحرفي</button></div></div></section>` : '';
   const birthMessage = birth.status === 'incomplete' ? 'أكمل اليوم والشهر والسنة بأربعة أرقام.'
     : birth.status === 'future' ? 'تاريخ الميلاد لا يمكن أن يكون في المستقبل.'
+      : birth.status === 'non-leap' ? 'هذه السنة ليست كبيسة؛ فبراير فيها ٢٨ يومًا. أبقينا يوم ٢٩ كما اخترته حتى تعدّل اليوم أو السنة.'
       : birth.status === 'invalid' ? 'التاريخ غير صحيح؛ راجع اليوم والشهر والسنة.'
         : !state.birthCity ? 'اختر مدينة الميلاد حتى نطبّق التوقيت التاريخي الصحيح.' : '';
   let chartMarkup = `<section class="natal-placeholder"><span>✦</span><div><h2>أدخل بيانات الميلاد</h2><p>${birthMessage || 'ستظهر هنا الشمس والقمر والطالع والكواكب والبيوت والزوايا.'}</p></div></section>`;
   if (birth.status === 'valid' && state.birthCity) {
-    try {
-      const chart = calculateNatalChart({
-        year:birth.year, month:birth.month, day:birth.day,
-        hour:state.birthHour || '12', minute:state.birthMinute || '0',
-        cityId:state.birthCity, timeKnown:state.birthTimeKnown,
-      });
-      chartMarkup = natalChartResult(chart);
-    } catch (error) {
-      chartMarkup = `<section class="natal-placeholder is-error"><span>!</span><div><h2>تعذّر حساب هذا الوقت</h2><p>${error.message === 'invalid-local-time' ? 'هذه الساعة غير موجودة أو مكررة بسبب تغيير التوقيت الصيفي. جرّب دقيقة أو ساعة أخرى وراجع بيانات الميلاد.' : 'راجع التاريخ والوقت والمدينة.'}</p></div></section>`;
+    const cached = natalCache.get({
+      year:birth.year, month:birth.month, day:birth.day,
+      hour:state.birthHour || '12', minute:state.birthMinute || '0',
+      cityId:state.birthCity, timeKnown:state.birthTimeKnown,
+    });
+    if (cached.error) {
+      chartMarkup = `<section class="natal-placeholder is-error"><span>!</span><div><h2>تعذّر حساب هذا الوقت</h2><p>${cached.error.message === 'invalid-local-time' ? 'هذه الساعة غير موجودة أو مكررة بسبب تغيير التوقيت الصيفي. جرّب دقيقة أو ساعة أخرى وراجع بيانات الميلاد.' : 'راجع التاريخ والوقت والمدينة.'}</p></div></section>`;
+    } else {
+      chartMarkup = natalChartResult(cached.chart);
     }
   }
   const full = state.detailMode === 'full';
@@ -238,8 +244,8 @@ function zodiac() {
   return `<section class="zodiac-hero natal-hero compact-hero"><div><span class="eyebrow">حساب واضح · تفسير رمزي بحدود معلنة</span><h2>الأبراج وخريطة الميلاد</h2><p>ملخص مريح أولًا، وكل التفاصيل الفلكية والتراثية محفوظة عند طلبها.</p><div class="hero-methods"><span>☉ مواضع فلكية</span><span>⌖ توقيت ومكان</span><span>◎ البيوت الكاملة</span></div></div><div class="zodiac-orbit"><span>✦</span>${ZODIAC_DETAILS.map((_, index) => `<i style="--i:${index}"></i>`).join('')}</div></section>
   <div class="view-mode"><div><b>طريقة العرض</b><small>${full ? 'كل الأقسام مفتوحة' : 'الملخص أولًا والتفاصيل عند الطلب'}</small></div><button class="btn ${full ? '' : 'primary'}" data-detail-mode>${full ? 'العودة للعرض المبسط' : 'عرض كامل'}</button></div>
   <div class="zodiac-input-pair"><section class="card zodiac-calculator heritage-panel heritage-first"><div class="section-heading"><div><span class="eyebrow">الحساب الأول</span><h2>الحساب الحرفي التراثي</h2><p class="muted">الاسم واسم الأم والباقي من ١٢.</p></div><span class="tag">الباقي من ١٢</span></div><div class="zodiac-inputs"><label><span>اسم الشخص</span><input data-field="zodiacName" value="${esc(state.zodiacName)}" placeholder="مثال: محمد"></label><label><span>اسم الأم</span><input data-field="zodiacMother" value="${esc(state.zodiacMother)}" placeholder="مثال: فاطمة"></label></div><div class="actions"><button class="btn primary" data-calculate-heritage>احسب</button><button class="btn" data-clear="heritage-zodiac">مسح</button></div></section>
-  <section class="card natal-input-card"><div class="section-heading"><div><span class="eyebrow">بيانات الخريطة</span><h2>بيانات الميلاد</h2><p class="muted">كل البيانات تبقى على جهازك.</p></div><span class="tag">محلي</span></div><div class="birth-date-card natal-birth-fields"><div class="natal-field-grid"><label><span>اليوم</span><select data-birth-field="birthDay"><option value="">اليوم</option>${dateOptions(daysInMonth(state.birthMonth,state.birthYear),state.birthDay)}</select></label><label><span>الشهر</span><select data-birth-field="birthMonth"><option value="">الشهر</option>${dateOptions(12,state.birthMonth,ARABIC_MONTHS)}</select></label><label><span>السنة</span><input type="text" inputmode="numeric" autocomplete="bday-year" maxlength="4" dir="ltr" data-birth-field="birthYear" value="${esc(state.birthYear)}" placeholder="مثال: 1990"></label><label class="city-field"><span>مدينة الميلاد داخل مصر</span><select data-birth-field="birthCity"><option value="">اختر المدينة</option>${cityOptions(state.birthCity)}</select></label></div><label class="time-known"><input type="checkbox" data-birth-time-known ${state.birthTimeKnown ? 'checked' : ''}><span><b>وقت الميلاد معروف</b><small>اختياري لحساب الطالع والبيوت</small></span></label>${state.birthTimeKnown ? `<div class="time-fields"><label><span>الساعة بنظام ٢٤</span><select data-birth-field="birthHour">${zeroOptions(24,state.birthHour)}</select></label><label><span>الدقيقة</span><select data-birth-field="birthMinute">${zeroOptions(60,state.birthMinute)}</select></label><div class="time-help"><b>لماذا الوقت مهم؟</b><span>الطالع والبيوت يتغيران مع دوران السماء.</span></div></div>` : ''}<div class="actions"><button class="btn primary" data-calculate-birth>احسب خريطة الميلاد</button><button class="btn" data-clear="natal">مسح</button></div>${birthMessage ? `<p class="form-error">${birthMessage}</p>` : ''}</div></section></div>
-  ${heritage.sign ? heritageDisplay : ''}${chartMarkup}
+  <section class="card natal-input-card"><div class="section-heading"><div><span class="eyebrow">بيانات الخريطة</span><h2>بيانات الميلاد</h2><p class="muted">كل البيانات تبقى على جهازك.</p></div><span class="tag">محلي</span></div><div class="birth-date-card natal-birth-fields"><div class="natal-field-grid"><label><span>اليوم</span><select data-birth-field="birthDay" class="${birth.status === 'non-leap' ? 'has-error' : ''}"><option value="">اليوم</option>${dateOptions(visibleDayCount(state.birthMonth,state.birthYear,state.birthDay),state.birthDay)}</select></label><label><span>الشهر</span><select data-birth-field="birthMonth"><option value="">الشهر</option>${dateOptions(12,state.birthMonth,ARABIC_MONTHS)}</select></label><label><span>السنة</span><input type="text" inputmode="numeric" autocomplete="bday-year" maxlength="4" dir="ltr" data-birth-field="birthYear" class="${birth.status === 'non-leap' ? 'has-error' : ''}" value="${esc(state.birthYear)}" placeholder="مثال: 1990"></label><label class="city-field"><span>مدينة الميلاد داخل مصر</span><select data-birth-field="birthCity"><option value="">اختر المدينة</option>${cityOptions(state.birthCity)}</select></label></div><label class="time-known"><input type="checkbox" data-birth-time-known ${state.birthTimeKnown ? 'checked' : ''}><span><b>وقت الميلاد معروف</b><small>اختياري لحساب الطالع والبيوت</small></span></label>${state.birthTimeKnown ? `<div class="time-fields"><label><span>الساعة بنظام ٢٤</span><select data-birth-field="birthHour">${zeroOptions(24,state.birthHour)}</select></label><label><span>الدقيقة</span><select data-birth-field="birthMinute">${zeroOptions(60,state.birthMinute)}</select></label><div class="time-help"><b>لماذا الوقت مهم؟</b><span>الطالع والبيوت يتغيران مع دوران السماء.</span></div></div>` : ''}<div class="actions"><button class="btn primary" data-calculate-birth>احسب خريطة الميلاد</button><button class="btn" data-clear="natal">مسح</button></div>${birthMessage ? `<p class="form-error">${birthMessage}</p>` : ''}</div></section></div>
+  ${heritageResult}${chartMarkup}
   <div class="detail-accordion supporting-details">${progressivePanel('دليل الأبراج','الأبراج الاثنا عشر',`<div class="zodiac-guide">${ZODIAC_DETAILS.map(zodiacGuideCard).join('')}</div>`,full)}${progressivePanel('حدود القراءة','ما هو حسابي وما هو رمزي',boundaries,full)}${progressivePanel('المصادر والمنهج','مراجع الحساب والسياق',`<div class="source-list">${sources}</div>`,full)}</div>`;
 }
 function reference() {
@@ -251,17 +257,27 @@ function reference() {
   return `<section class="reference-intro card"><div><span class="eyebrow">مرجع قابل للمراجعة</span><h2>المرجع والمنهج</h2><p class="muted">اختر الباب الذي تحتاجه؛ كل التفاصيل الحسابية محفوظة دون إغراق الصفحة.</p></div><span class="tag">منهج معلن</span></section><div class="detail-accordion reference-accordion">${progressivePanel('الأبجد المشرقي','قيم الحروف المعتمدة',abjad,full)}${progressivePanel('الطبائع','توزيع الحروف',elements,full)}${progressivePanel('الكواكب','الترتيب المستخدم',planets,full)}${progressivePanel('البروج','الترتيب والعناصر',signs,full)}</div><section class="card reference-tools"><div><small>تطوير</small><b>إبراهيم بن صلاح الدين</b><span>حساب فلكي محلي · البيوت الكاملة · الباقي من ١٢</span></div><div class="actions"><button class="btn primary" data-run-tests>تشغيل الاختبارات الذاتية</button><button class="btn" data-reset-storage>مسح البيانات المحفوظة</button></div></section>`;
 }
 function render() {
-  const openDisclosures = new Set([...app.querySelectorAll('details[data-disclosure][open]')].map(item => item.dataset.disclosure));
+  const previousMode = lastDetailMode;
+  const nextMode = state.detailMode;
+  const previouslyOpen = [...app.querySelectorAll('details[data-disclosure][open]')].map(item => item.dataset.disclosure);
+  const keysToRestore = restoredDisclosures({ previousMode, nextMode, openKeys: previouslyOpen });
+  lastDetailMode = nextMode;
   const sectionViews = { names, calculator, zodiac, reference }; const result = analyze(state.text); const view = sectionViews[state.section] || names;
   app.innerHTML = `<div class="shell"><header class="top"><div class="brand"><img src="./icons/icon-192.png" alt=""><div class="brand-copy"><div class="brand-title-row"><h1>أطلس الحروف</h1><span class="developer-mark"><i>تطوير</i><b>إبراهيم بن صلاح الدين</b></span></div><small>الأسماء وحساب الحروف · قراءة تراثية موثّقة</small></div></div><button class="sum-chip" data-go-calculator><span>المجموع الحالي</span>${num(result.total)}</button></header><nav class="nav">${[['names','الأسماء'],['calculator','الحاسبة'],['zodiac','الأبراج'],['reference','المرجع']].map(([id,label])=>`<button class="${state.section===id?'active':''}" data-nav="${id}">${label}</button>`).join('')}</nav>${view()}<footer class="app-footer"><span>أطلس الحروف</span><b>تطوير إبراهيم بن صلاح الدين</b><small>حسابات محلية · لا تنبؤات غيبية</small></footer></div>`;
-  openDisclosures.forEach(key => { const item = [...app.querySelectorAll('details[data-disclosure]')].find(detail => detail.dataset.disclosure === key); if (item) item.open = true; });
+  keysToRestore.forEach(key => { const item = [...app.querySelectorAll('details[data-disclosure]')].find(detail => detail.dataset.disclosure === key); if (item) item.open = true; });
   attach();
+  if (pendingFocusSelector) {
+    const field = document.querySelector(pendingFocusSelector);
+    pendingFocusSelector = '';
+    field?.focus();
+  }
 }
 function parseArabicNumber(raw) { return Number(String(raw).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^0-9]/g,'')) || 0; }
 function commitText(value) { state.text = value; persist(); }
-function normalizeSelectedBirthDay() {
-  const maxDay = daysInMonth(state.birthMonth, state.birthYear);
-  if (Number(state.birthDay) > maxDay) state.birthDay = '';
+function maybeFocusNonLeapDay() {
+  if (parseBirthDate(state.birthDay, state.birthMonth, state.birthYear).status === 'non-leap') {
+    pendingFocusSelector = 'select[data-birth-field="birthDay"]';
+  }
 }
 let redrawTimer;
 function redrawKeepingFocus(selector, cursor) {
@@ -279,14 +295,14 @@ function attach() { document.querySelectorAll('[data-nav]').forEach(e=>e.onclick
   document.querySelector('[data-calculate-heritage]')?.addEventListener('click',()=>{persist();render();});
   document.querySelector('#text')?.addEventListener('input', e=>{ const cursor=e.target.selectionStart; commitText(e.target.value); redrawKeepingFocus('#text', cursor); }); document.querySelector('#target')?.addEventListener('input', e=>{const cursor=e.target.selectionStart;state.target=e.target.value;persist();redrawKeepingFocus('#target',cursor);}); document.querySelectorAll('[data-example]').forEach(e=>e.onclick=()=>{commitText(e.dataset.example);render();});
   document.querySelectorAll('[data-field]').forEach(field=>{const update=event=>{const input=event.currentTarget;const cursor=typeof input.selectionStart==='number'?input.selectionStart:null;const selector=`[data-field="${input.dataset.field}"]`;state[input.dataset.field]=input.value;persist();if(input.tagName==='SELECT'||input.type==='date')render();else redrawKeepingFocus(selector,cursor);};field.addEventListener('input',update);field.addEventListener('change',update);});
-  document.querySelectorAll('select[data-birth-field]').forEach(field=>field.addEventListener('change',event=>{state[event.currentTarget.dataset.birthField]=event.currentTarget.value;normalizeSelectedBirthDay();persist();render();}));
+  document.querySelectorAll('select[data-birth-field]').forEach(field=>field.addEventListener('change',event=>{state[event.currentTarget.dataset.birthField]=event.currentTarget.value;persist();render();}));
   document.querySelector('input[data-birth-field="birthYear"]')?.addEventListener('input',event=>{const input=event.currentTarget;input.value=westernDigits(input.value).replace(/\D/g,'').slice(0,4);state.birthYear=input.value;persist();});
-  document.querySelector('input[data-birth-field="birthYear"]')?.addEventListener('change',()=>{normalizeSelectedBirthDay();persist();render();});
+  document.querySelector('input[data-birth-field="birthYear"]')?.addEventListener('change',()=>{maybeFocusNonLeapDay();persist();render();});
   document.querySelector('[data-calculate-birth]')?.addEventListener('click',()=>{document.querySelector('input[data-birth-field="birthYear"]')?.blur();render();});
   document.querySelector('[data-birth-time-known]')?.addEventListener('change',event=>{state.birthTimeKnown=event.currentTarget.checked;persist();render();});
   document.querySelectorAll('[data-source-url]').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();openExternalSource(event.currentTarget.dataset.sourceUrl);}));
   document.querySelectorAll('[data-send]').forEach(e=>e.onclick=()=>{state.nameA=state.text;state.namesMode='comparison';setSection('names');}); document.querySelectorAll('[data-select-name]').forEach(e=>e.addEventListener('click',()=>{state.desiredBabyName=e.dataset.selectName;persist();render();document.querySelector('[data-field="desiredBabyName"]')?.scrollIntoView({behavior:'smooth',block:'center'});}));
-  document.querySelectorAll('[data-clear]').forEach(e=>e.onclick=()=>{if(e.dataset.clear==='calculator'){state.text='';state.target='';}if(e.dataset.clear==='names'){state.nameA='';state.nameB='';state.motherA='';state.motherB='';}if(e.dataset.clear==='parents'){state.father='';state.mother='';state.desiredBabyName='';state.maleSearch='';state.femaleSearch='';state.suggestionLimit=6;}if(e.dataset.clear==='heritage-zodiac'){state.zodiacName='';state.zodiacMother='';}if(e.dataset.clear==='natal'){state.birthDay='';state.birthMonth='';state.birthYear='';state.birthCity='';state.birthTimeKnown=false;state.birthHour='12';state.birthMinute='0';}if(e.dataset.clear==='zodiac'){state.zodiacName='';state.zodiacMother='';state.birthDay='';state.birthMonth='';state.birthYear='';state.birthCity='';state.birthTimeKnown=false;}persist();render();toast('تم المسح');}); document.querySelector('[data-run-tests]')?.addEventListener('click',()=>{const tests=[['بسم الله الرحمن الرحيم',786],['داود',15],['جالوت',440],['محمد',92],['فاطمة',135],['أإآء',4]];const passed=tests.every(([x,n])=>analyze(x).total===n)&&zodiacFromNumber((92+135)%12).name==='الدلو'&&zodiacFromDate('1990-04-01').name==='الحمل'&&parseBirthDate('١','٤','١٩٩٠').sign.name==='الحمل';toast(passed?'نجحت جميع الاختبارات المرجعية':'فشل اختبار ذاتي');}); document.querySelector('[data-reset-storage]')?.addEventListener('click',()=>{try{localStorage.removeItem('hisab-jomal-state');}catch{}location.reload();}); }
+  document.querySelectorAll('[data-clear]').forEach(e=>e.onclick=()=>{if(e.dataset.clear==='calculator'){state.text='';state.target='';}if(e.dataset.clear==='names'){state.nameA='';state.nameB='';state.motherA='';state.motherB='';}if(e.dataset.clear==='parents'){state.father='';state.mother='';state.desiredBabyName='';state.maleSearch='';state.femaleSearch='';state.suggestionLimit=6;}if(e.dataset.clear==='heritage-zodiac'){state.zodiacName='';state.zodiacMother='';}if(e.dataset.clear==='natal'){state.birthDay='';state.birthMonth='';state.birthYear='';state.birthCity='';state.birthTimeKnown=false;state.birthHour='12';state.birthMinute='0';}if(e.dataset.clear==='zodiac'){state.zodiacName='';state.zodiacMother='';state.birthDay='';state.birthMonth='';state.birthYear='';state.birthCity='';state.birthTimeKnown=false;}persist();render();toast('تم المسح');}); document.querySelector('[data-run-tests]')?.addEventListener('click',()=>{const result=runReferenceChecks({analyze,zodiacFromNumber,zodiacFromDate,parseBirthDate});toast(result.ok?`نجحت جميع الاختبارات المرجعية (${num(result.passed)}/${num(result.checks)})`:`فشل اختبار ذاتي (${num(result.passed)}/${num(result.checks)})`);}); document.querySelector('[data-reset-storage]')?.addEventListener('click',()=>{try{localStorage.removeItem('hisab-jomal-state');}catch{}location.reload();}); }
 render();
 if (import.meta.env.PROD && 'serviceWorker' in navigator && !isTauri()) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atlas-al-huruf-v0110';
+const CACHE_NAME = 'atlas-al-huruf-v0110'; // يُطابق package.json عبر serviceWorkerCacheName()
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', event => {

@@ -1,5 +1,12 @@
 import { elementRelation, profile } from './engine.js';
 
+export function buildIndexedNames(maleList, femaleList, profileFn = profile) {
+  return {
+    male: maleList.map(name => ({ name, p: profileFn(name) })),
+    female: femaleList.map(name => ({ name, p: profileFn(name) })),
+  };
+}
+
 export function assessBabyName(candidate, parentEntries = []) {
   return assessBabyProfile(profile(candidate), parentEntries);
 }

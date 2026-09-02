@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { femaleNames, maleNames } from '../src/data.js';
 import { profile } from '../src/engine.js';
-import { assessBabyName, babyVerdict, suggestionEmptyMessage } from '../src/names-engine.js';
+import { readFile } from 'node:fs/promises';
+import { assessBabyName, assessBabyProfile, babyVerdict, buildIndexedNames, suggestionEmptyMessage } from '../src/names-engine.js';
 import { copyText, escapeHtml } from '../src/platform.js';
 
 test('محرك اقتراح الاسم منفصل وقابل للاختبار', () => {
@@ -21,6 +22,31 @@ test('قاعدة الأسماء الموسعة كبيرة ونظيفة وتشم�
   assert.ok(['أمير', 'تميم', 'غيث', 'ليث', 'يامن', 'مينا'].every(name => maleNames.includes(name)));
   assert.ok(['أسيل', 'إيلاف', 'تالين', 'ريناد', 'سلمى', 'لجين', 'ملك', 'وتين'].every(name => femaleNames.includes(name)));
   assert.ok([...maleNames, ...femaleNames].every(name => /^[ء-ي\s]+$/u.test(name) && profile(name).total > 0));
+});
+
+test('فهرسة الأسماء تتم مرة واحدة ولا تتكرر مع البحث', async (t) => {
+  let profileCalls = 0;
+  const countingProfile = name => {
+    profileCalls += 1;
+    return profile(name);
+  };
+  const started = performance.now();
+  const indexed = buildIndexedNames(maleNames, femaleNames, countingProfile);
+  t.diagnostic(`indexedNames build: ${(performance.now() - started).toFixed(2)}ms`);
+  const built = profileCalls;
+  assert.equal(indexed.male.length, maleNames.length);
+  assert.equal(indexed.female.length, femaleNames.length);
+  assert.equal(built, maleNames.length + femaleNames.length);
+
+  const parentEntries = [{ label: 'الأب', profile: profile('محمد') }];
+  indexed.male.filter(item => item.name.includes('م')).forEach(item => assessBabyProfile(item.p, parentEntries));
+  indexed.female.filter(item => item.name.includes('ن')).forEach(item => assessBabyProfile(item.p, parentEntries));
+  assert.equal(profileCalls, built, 'البحث والترتيب يعيدان استخدام الفهرس ولا يعيدان حساب الأسماء');
+
+  const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+  assert.equal([...main.matchAll(/buildIndexedNames\(/g)].length, 1);
+  assert.match(main, /const indexedNames = Object\.freeze\(buildIndexedNames/);
+  assert.match(main, /indexedNames\[kind\]/);
 });
 
 test('اقتراح المولود ومقارنة الأسماء لا يتناقضان في تضاد الهواء والتراب', () => {
