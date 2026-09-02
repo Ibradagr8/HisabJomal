@@ -1,12 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyze, compareProfiles, profile } from '../src/engine.js';
+import { analyze, compareElements, compareProfiles, profile } from '../src/engine.js';
 
 test('حسابات الأبجد المرجعية ثابتة', () => {
   assert.equal(analyze('بسم الله الرحمن الرحيم').total, 786);
   assert.equal(analyze('محمد').total, 92);
   assert.equal(analyze('فاطمة').total, 135);
+  assert.equal(analyze('داود').total, 15);
+  assert.equal(analyze('جالوت').total, 440);
   assert.equal(analyze('أإآء').total, 4);
+});
+
+test('التطبيع يدعم النص القرآني وأشكال العرض ولا يكرر الشدة', () => {
+  assert.equal(analyze('ٱ').total, 1);
+  assert.equal(analyze('ﻻ').total, 31);
+  assert.equal(analyze('﷽').total, 786);
+  assert.equal(analyze('مّ').total, 40);
+});
+
+test('مقارنة الطبائع تستخدم نفس نموذج اقتراح المولود', () => {
+  assert.equal(profile('تيم').leaders[0], 'هواء');
+  assert.equal(profile('داود').leaders[0], 'تراب');
+  assert.equal(compareElements(profile('تيم'), profile('داود')).kind, 'تضاد');
 });
 
 test('التساوي الفردي يمنح الغلبة للشخص صاحب دور الطالب', () => {

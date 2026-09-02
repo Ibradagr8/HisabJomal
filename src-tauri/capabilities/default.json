@@ -8,6 +8,12 @@
     {
       "identifier": "opener:allow-open-url",
       "allow": [
+        { "url": "https://ssd.jpl.nasa.gov/horizons/manual.html" },
+        { "url": "https://aa.usno.navy.mil/data/siderealtime" },
+        { "url": "https://www.iana.org/time-zones" },
+        { "url": "https://github.com/cosinekitty/astronomy" },
+        { "url": "https://www.astro.com/astrology/in_intro_e.htm" },
+        { "url": "https://www.astro.com/astrowiki/en/Asc" },
         { "url": "https://sciamvs.org/files/SCIAMVS_19_167-200_Thomann.pdf" },
         { "url": "https://www.qdl.qa/en/archive/81055/vdc_100088125470.0x00000e" },
         { "url": "https://sites.wip.nlm.nih.gov/hmd/arabic/physiognomy2.html" },

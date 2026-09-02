@@ -4,7 +4,9 @@ export const ABJAD = Object.freeze({
   ق: 100, ر: 200, ش: 300, ت: 400, ث: 500, خ: 600, ذ: 700, ض: 800, ظ: 900, غ: 1000,
 });
 
-const normalizations = Object.freeze({ أ: 'ا', إ: 'ا', آ: 'ا', ء: 'ا', ة: 'ه', ئ: 'ي', ى: 'ي', ؤ: 'و' });
+const normalizations = Object.freeze({ أ: 'ا', إ: 'ا', آ: 'ا', ء: 'ا', ٱ: 'ا', ة: 'ه', ئ: 'ي', ى: 'ي', ؤ: 'و' });
+export const OPPOSING_ELEMENTS = Object.freeze(new Set(['نار/ماء', 'ماء/نار', 'هواء/تراب', 'تراب/هواء']));
+export const FRIENDLY_ELEMENTS = Object.freeze(new Set(['نار/هواء', 'هواء/نار', 'ماء/تراب', 'تراب/ماء']));
 export const ELEMENTS = Object.freeze({
   نار: ['ا', 'ه', 'ط', 'م', 'ف', 'ش', 'ذ'],
   هواء: ['ب', 'و', 'ي', 'ن', 'ص', 'ت', 'ض'],
@@ -21,13 +23,17 @@ const abjadOrder = Object.keys(ABJAD);
 const elementByLetter = Object.fromEntries(Object.entries(ELEMENTS).flatMap(([element, letters]) => letters.map(letter => [letter, element])));
 
 export function normalizeLetter(char) { return normalizations[char] || char; }
+export function normalizeText(text = '') {
+  return String(text).normalize('NFKC').replaceAll('﷽', 'بسم الله الرحمن الرحيم');
+}
 export function analyze(text = '') {
-  const letters = [...text].map((raw, index) => {
+  const prepared = normalizeText(text);
+  const letters = [...prepared].map((raw, index) => {
     const normalized = normalizeLetter(raw);
     const value = ABJAD[normalized] || 0;
     return value ? { raw, normalized, value, index } : null;
   }).filter(Boolean);
-  const words = text.trim().split(/\s+/).filter(Boolean).map(word => ({ word, ...analyzeWord(word) }));
+  const words = prepared.trim().split(/\s+/).filter(Boolean).map(word => ({ word, ...analyzeWord(word) }));
   const total = letters.reduce((sum, letter) => sum + letter.value, 0);
   return { text, total, count: letters.length, letters, words };
 }
@@ -80,10 +86,17 @@ export function compareElements(first, second) {
   if (!first.leaders.length || !second.leaders.length || first.leaders.length > 1 || second.leaders.length > 1) return { kind: 'مركّب', text: 'متعادل / مركّب — يُقرأ توزيع الطبائع بدل حكم واحد.' };
   const [a] = first.leaders; const [b] = second.leaders;
   if (a === b) return { kind: 'انسجام', text: 'انسجام: الطبع الغالب متطابق.' };
-  const winningPairs = new Set(['نار/هواء', 'هواء/تراب', 'تراب/ماء', 'ماء/نار']);
-  if (winningPairs.has(`${a}/${b}`)) return { kind: 'غلبة طبع', text: `غلبة طبع: ${a} يغلب ${b}.` };
-  if (winningPairs.has(`${b}/${a}`)) return { kind: 'غلبة طبع', text: `غلبة طبع: ${b} يغلب ${a}.` };
-  return { kind: 'تضاد', text: `تضاد: ${a} مع ${b}.` };
+  const relation = elementRelation(a, b);
+  if (relation === 'صداقة') return { kind: relation, text: `صداقة بين الطبائع: ${a} مع ${b}.` };
+  if (relation === 'تضاد') return { kind: relation, text: `تضاد بين الطبائع: ${a} مع ${b}.` };
+  return { kind: 'امتزاج', text: `امتزاج بين طبعَي ${a} و${b} دون تضاد مباشر.` };
+}
+export function elementRelation(first, second) {
+  if (!first || !second) return 'غير محدد';
+  if (first === second) return 'انسجام';
+  if (OPPOSING_ELEMENTS.has(`${first}/${second}`)) return 'تضاد';
+  if (FRIENDLY_ELEMENTS.has(`${first}/${second}`)) return 'صداقة';
+  return 'امتزاج';
 }
 export function compareCelestial(first, second) {
   const planet = !first.planetLeaders.length || !second.planetLeaders.length || first.planetLeaders.length > 1 || second.planetLeaders.length > 1

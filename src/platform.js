@@ -1,3 +1,9 @@
+export function escapeHtml(value = '') {
+  return String(value).replace(/[&<>'"]/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  }[char]));
+}
+
 export async function copyText(text, clipboard = globalThis.navigator?.clipboard, doc = globalThis.document) {
   if (clipboard?.writeText) {
     try {

@@ -1,11 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ZODIAC_SOURCES, isAllowedSourceUrl, parseBirthDate, zodiacFromDate } from '../src/zodiac.js';
+import { ZODIAC_SOURCES, daysInMonth, isAllowedSourceUrl, parseBirthDate, zodiacFromDate, zodiacFromNumber } from '../src/zodiac.js';
 
 test('تاريخ الميلاد يقبل الأرقام العربية والغربية', () => {
   assert.equal(parseBirthDate('١', '٤', '١٩٩٠').sign.name, 'الحمل');
   assert.equal(parseBirthDate('1', '4', '1990').iso, '1990-04-01');
   assert.equal(zodiacFromDate('1990-04-01').name, 'الحمل');
+});
+
+test('الباقي صفر يُعامل بوصفه الباقي الثاني عشر', () => {
+  assert.equal(zodiacFromNumber(0).name, 'الحوت');
+  assert.equal(zodiacFromNumber(12).name, 'الحوت');
+});
+
+test('عدد أيام الشهر يتغير حسب الشهر والسنة الكبيسة', () => {
+  assert.equal(daysInMonth('2', '1990'), 28);
+  assert.equal(daysInMonth('2', '1992'), 29);
+  assert.equal(daysInMonth('4', '1990'), 30);
+  assert.equal(daysInMonth('', ''), 31);
 });
 
 test('يرفض التواريخ المستحيلة والناقصة والمستقبلية', () => {

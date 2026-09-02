@@ -27,8 +27,9 @@ export const QUALITY_GUIDE = Object.freeze({
 });
 
 export function zodiacFromNumber(number) {
-  if (!number) return null;
-  const index = ((number - 1) % 12 + 12) % 12;
+  if (number === null || number === undefined || number === '' || !Number.isFinite(Number(number))) return null;
+  const normalized = Number(number) % 12 || 12;
+  const index = ((normalized - 1) % 12 + 12) % 12;
   return { ...ZODIAC_DETAILS[index], number:index + 1 };
 }
 
@@ -43,6 +44,14 @@ export const ARABIC_MONTHS = Object.freeze([
   'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ]);
+
+export function daysInMonth(monthRaw, yearRaw = '') {
+  const month = Number(westernDigits(monthRaw));
+  if (!Number.isInteger(month) || month < 1 || month > 12) return 31;
+  const parsedYear = Number(westernDigits(yearRaw));
+  const year = Number.isInteger(parsedYear) && parsedYear >= 1000 ? parsedYear : 2000;
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
 
 export function westernDigits(value = '') {
   return String(value)

@@ -1,4 +1,7 @@
+import { LOCAL_BIRTH_CITIES } from './cities-data.js';
+
 export const APP_SECTIONS = Object.freeze(['names', 'calculator', 'zodiac', 'reference']);
+const BIRTH_CITY_IDS = new Set(LOCAL_BIRTH_CITIES.map(city => city.id));
 
 export const STATE_KEYS = Object.freeze([
   'section', 'text', 'target', 'nameA', 'motherA', 'nameB', 'motherB', 'role',
@@ -11,7 +14,7 @@ export const DEFAULT_STATE = Object.freeze({
   section: 'names', text: '', target: '', nameA: '', motherA: '', nameB: '', motherB: '',
   role: 'طالب', father: '', mother: '', desiredBabyName: '', maleSearch: '', femaleSearch: '',
   zodiacName: '', zodiacMother: '', birthDay: '', birthMonth: '', birthYear: '',
-  birthHour: '12', birthMinute: '0', birthCity: '', birthTimeKnown: false, history: [],
+  birthHour: '12', birthMinute: '0', birthCity: '', birthTimeKnown: false,
   namesMode: 'baby', detailMode: 'simple', suggestionLimit: 6,
 });
 
@@ -37,13 +40,6 @@ export function sanitizeState(input = {}) {
   if (['simple', 'full'].includes(input.detailMode)) clean.detailMode = input.detailMode;
   if (typeof input.birthTimeKnown === 'boolean') clean.birthTimeKnown = input.birthTimeKnown;
   if (Number.isFinite(input.suggestionLimit)) clean.suggestionLimit = Math.min(500, Math.max(6, Math.trunc(input.suggestionLimit)));
-  if (Array.isArray(input.history)) {
-    clean.history = input.history.slice(0, 5).flatMap(item => {
-      if (!item || typeof item.text !== 'string' || !Number.isFinite(item.total)) return [];
-      return [{ text: item.text.slice(0, 5000), total: item.total }];
-    });
-  }
-
   // ترحيل تاريخ النسخ السابقة من YYYY-MM-DD إلى الحقول الجديدة.
   if (typeof input.birthDate === 'string') {
     const match = input.birthDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -57,13 +53,15 @@ export function sanitizeState(input = {}) {
 }
 
 export function createState(stored = {}, shared = {}) {
-  const merged = { ...DEFAULT_STATE, ...sanitizeState(stored), ...sanitizeState(shared) };
+  const cleanStored = sanitizeState(stored);
+  const cleanShared = sanitizeState(shared);
+  const merged = { ...DEFAULT_STATE, ...cleanStored, ...cleanShared };
   // النسخ السابقة كانت تعرض 12 اقتراحًا دفعة واحدة؛ نبدأ الآن بستة لتبقى الواجهة هادئة.
   if (merged.suggestionLimit === 12) merged.suggestionLimit = 6;
   // ترحيل اختيار القاهرة من النسخة السابقة، وإسقاط أي مدينة لم تعد ضمن قاعدة مصر.
   if (merged.birthCity === 'cairo') merged.birthCity = 'eg-360630';
-  if (merged.birthCity && !merged.birthCity.startsWith('eg-')) merged.birthCity = '';
-  // مطلب المنتج: يبدأ التطبيق دائمًا من قسم الأسماء.
-  merged.section = 'names';
+  if (merged.birthCity && !BIRTH_CITY_IDS.has(merged.birthCity)) merged.birthCity = '';
+  // التشغيل العادي يبدأ من الأسماء، بينما رابط المشاركة يعيد الشاشة التي نُسخ منها.
+  merged.section = cleanShared.section || 'names';
   return merged;
 }
