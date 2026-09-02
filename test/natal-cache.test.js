@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { calculateNatalChart, cityById } from '../src/natal-chart.js';
 import { createNatalChartCache, natalChartInputKey, resolveNatalChartFacts } from '../src/natal-cache.js';
 
@@ -112,4 +113,38 @@ test('نظام البيوت غير قابل للتغيير من المدخلات
     natalChartInputKey(baseInput),
     natalChartInputKey({ ...baseInput, houseSystem: 'placidus' }),
   );
+});
+
+test('حساب الخريطة وutcOffset يعتمدان على polyfill لا على globalThis.Temporal', async () => {
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const natalCacheSrc = await readFile(new URL('../src/natal-cache.js', import.meta.url), 'utf8');
+  const natalChartSrc = await readFile(new URL('../src/natal-chart.js', import.meta.url), 'utf8');
+  assert.ok(pkg.dependencies['@js-temporal/polyfill']);
+  assert.match(natalCacheSrc, /import \{ Temporal \} from '@js-temporal\/polyfill'/);
+  assert.match(natalChartSrc, /import \{ Temporal \} from '@js-temporal\/polyfill'/);
+  assert.doesNotMatch(natalCacheSrc, /globalThis\.Temporal/);
+  assert.doesNotMatch(natalChartSrc, /globalThis\.Temporal/);
+
+  const hadNative = Object.prototype.hasOwnProperty.call(globalThis, 'Temporal');
+  const original = globalThis.Temporal;
+  try {
+    delete globalThis.Temporal;
+    assert.equal(globalThis.Temporal, undefined);
+    let facts = resolveNatalChartFacts(baseInput);
+    assert.equal(facts.utcOffset, '+02:00');
+    let chart = calculateNatalChart(baseInput);
+    assert.equal(chart.date.toISOString(), '1990-04-01T10:00:00.000Z');
+    assert.equal(chart.placements.find(item => item.key === 'sun').sign.name, 'الحمل');
+
+    globalThis.Temporal = {
+      ZonedDateTime: { from() { throw new Error('used globalThis.Temporal'); } },
+    };
+    facts = resolveNatalChartFacts(baseInput);
+    assert.equal(facts.utcOffset, '+02:00');
+    chart = calculateNatalChart(baseInput);
+    assert.equal(chart.date.toISOString(), '1990-04-01T10:00:00.000Z');
+  } finally {
+    if (hadNative) globalThis.Temporal = original;
+    else delete globalThis.Temporal;
+  }
 });
