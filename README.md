@@ -11,7 +11,7 @@
 <p align="center"><strong>تطوير إبراهيم بن صلاح الدين</strong></p>
 
 <p align="center">
-  <img alt="الإصدار" src="https://img.shields.io/badge/version-0.1.10-c18b48">
+  <img alt="الإصدار" src="https://img.shields.io/badge/version-0.1.11-c18b48">
   <img alt="النظام" src="https://img.shields.io/badge/platform-Windows%20%7C%20iPhone-176451">
   <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2-123c35">
   <img alt="اللغة" src="https://img.shields.io/badge/UI-العربية-6f4e2f">
@@ -246,7 +246,7 @@ src-tauri/target/release/bundle/nsis/
 يوجد مسار GitHub Actions باسم **Build Windows app**:
 
 - يمكن تشغيله يدويًا من تبويب Actions.
-- يعمل تلقائيًا عند رفع وسم يبدأ بـ `v` مثل `v0.1.10`.
+- يعمل تلقائيًا عند رفع وسم يبدأ بـ `v` مثل `v0.1.11`.
 - يثبت Rust وNode.js وNSIS.
 - يبني مثبّت EXE واحدًا بنظام NSIS.
 - يرفع Artifact باسم `atlas-al-huruf-windows-exe`.
@@ -255,8 +255,8 @@ src-tauri/target/release/bundle/nsis/
 مثال لإنشاء إصدار بعد مراجعة التغييرات:
 
 ```bash
-git tag v0.1.10
-git push origin v0.1.10
+git tag v0.1.11
+git push origin v0.1.11
 ```
 
 ## هيكل المشروع
@@ -316,7 +316,7 @@ HisabJomal/
 
 ## الحالة الحالية
 
-- الإصدار: `0.1.10`
+- الإصدار: `0.1.11`
 - الأنظمة المستهدفة: Windows، وiPhone عبر نسخة الويب القابلة للإضافة إلى الشاشة الرئيسية.
 - واجهة التطبيق: العربية.
 - التطبيق يعمل محليًا دون حساب مستخدم.

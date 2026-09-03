@@ -101,14 +101,24 @@ export function parseBirthDate(dayRaw, monthRaw, yearRaw, today = new Date()) {
   if (!dayText && !monthText && !yearText) return { status: 'empty', sign: null };
   if (!dayText || !monthText || yearText.length !== 4) return { status: 'incomplete', sign: null };
   const day = Number(dayText); const month = Number(monthText); const year = Number(yearText);
-  if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) return { status: 'invalid', sign: null };
+  if (year < 1000) return { status: 'invalid', sign: null, errorFields: ['birthYear'], focusField: 'birthYear' };
+  if (month < 1 || month > 12) return { status: 'invalid', sign: null, errorFields: ['birthMonth'], focusField: 'birthMonth' };
+  if (day < 1 || day > 31) return { status: 'invalid', sign: null, errorFields: ['birthDay'], focusField: 'birthDay' };
   const date = new Date(Date.UTC(year, month - 1, day));
   if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
-    if (month === 2 && day === 29) return { status: 'non-leap', sign: null, day: String(day), month: String(month), year: String(year) };
-    return { status: 'invalid', sign: null };
+    if (month === 2 && day === 29) return { status: 'non-leap', sign: null, day: String(day), month: String(month), year: String(year), errorFields: ['birthDay', 'birthYear'], focusField: 'birthDay' };
+    return { status: 'invalid', sign: null, errorFields: ['birthDay', 'birthMonth'], focusField: 'birthDay' };
   }
   const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  if (date.getTime() > todayUtc) return { status: 'future', sign: null };
+  if (date.getTime() > todayUtc) {
+    const futureYear = year > today.getFullYear();
+    return {
+      status: 'future',
+      sign: null,
+      errorFields: futureYear ? ['birthYear'] : ['birthDay', 'birthMonth', 'birthYear'],
+      focusField: futureYear ? 'birthYear' : 'birthDay',
+    };
+  }
   return {
     status: 'valid',
     sign: zodiacFromMonthDay(month, day),

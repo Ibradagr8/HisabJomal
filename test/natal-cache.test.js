@@ -90,6 +90,15 @@ test('تغيير latitude أو longitude يبطل كاش خريطة الميلا
   assert.equal(calls, 4);
 });
 
+test('مدينتان حقيقيتان تنتجان مفتاحين وطالعين مختلفين', () => {
+  const cairoInput = { ...baseInput, cityId: cairo.id };
+  const helwanInput = { ...baseInput, cityId: helwan.id };
+  assert.notEqual(natalChartInputKey(cairoInput), natalChartInputKey(helwanInput));
+  const cairoChart = calculateNatalChart(cairoInput);
+  const helwanChart = calculateNatalChart(helwanInput);
+  assert.notEqual(cairoChart.angles.ascendant.longitude, helwanChart.angles.ascendant.longitude);
+});
+
 test('تغيير timezone أو UTC offset المحسوب يبطل كاش خريطة الميلاد', () => {
   let calls = 0;
   const cache = createNatalChartCache(() => {

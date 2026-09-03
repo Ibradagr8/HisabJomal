@@ -6,6 +6,7 @@ import { serviceWorkerCacheName } from '../src/version.js';
 test('اسم كاش عامل الخدمة يُشتق من رقم الإصدار', async () => {
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(serviceWorkerCacheName('0.1.10'), 'atlas-al-huruf-v0110');
+  assert.equal(serviceWorkerCacheName('0.1.11'), 'atlas-al-huruf-v0111');
   assert.equal(serviceWorkerCacheName('0.1.8'), 'atlas-al-huruf-v018');
   assert.equal(serviceWorkerCacheName(pkg.version), `atlas-al-huruf-v${pkg.version.replaceAll('.', '')}`);
 });

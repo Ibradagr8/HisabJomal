@@ -85,4 +85,7 @@ test('الواجهة خالية من التصدير ونسخ الرابط وتع
   assert.match(main, /planetDisclosureId/);
   assert.match(main, /restoredDisclosures/);
   assert.match(main, /createNatalChartCache/);
+  assert.match(main, /aria-invalid="true"/);
+  assert.match(main, /aria-describedby="birth-date-error"/);
+  assert.match(main, /maybeFocusBirthDateError/);
 });

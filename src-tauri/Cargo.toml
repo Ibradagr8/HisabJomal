@@ -1,6 +1,6 @@
 [package]
 name = "atlas-al-huruf"
-version = "0.1.10"
+version = "0.1.11"
 description = "أطلس الحروف"
 authors = ["Ibrahim bin Salah El Din"]
 edition = "2021"
