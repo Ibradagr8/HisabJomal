@@ -89,3 +89,16 @@ test('الواجهة خالية من التصدير ونسخ الرابط وتع
   assert.match(main, /aria-describedby="birth-date-error"/);
   assert.match(main, /maybeFocusBirthDateError/);
 });
+
+test('تبويب الأبراج يعرض أداة واحدة عبر بطاقتين مستقلتين', async () => {
+  const main = await readFile(new URL('src/main.js', root), 'utf8');
+  const styles = await readFile(new URL('src/styles.css', root), 'utf8');
+  assert.match(main, /zodiacModeSwitcherMarkup\(state\.zodiacMode\)/);
+  assert.match(main, /selectedZodiacPanel\(state\.zodiacMode/);
+  assert.match(main, /data-zodiac-panel="heritage"/);
+  assert.match(main, /data-zodiac-panel="natal"/);
+  assert.match(main, /data-zodiac-mode/);
+  assert.doesNotMatch(main, /zodiac-input-pair/);
+  assert.match(styles, /\.zodiac-mode-switch/);
+  assert.match(styles, /\.zodiac-tool-panel/);
+});

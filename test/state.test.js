@@ -8,11 +8,20 @@ test('التخزين التالف لا يعطّل تشغيل التطبيق', ()
 });
 
 test('يتم تجاهل القيم غير المسموح بها', () => {
-  const clean = sanitizeState({ role: 'مدير', section: 'unknown', nameA: 12, history: [{ text: 'محمد', total: 92 }] });
+  const clean = sanitizeState({ role: 'مدير', section: 'unknown', zodiacMode: 'unknown', nameA: 12, history: [{ text: 'محمد', total: 92 }] });
   assert.equal(clean.role, undefined);
   assert.equal(clean.section, undefined);
   assert.equal(clean.nameA, undefined);
   assert.equal(clean.history, undefined);
+  assert.equal(clean.zodiacMode, undefined);
+});
+
+test('وضع الأبراج محفوظ وآمن ومتوافق مع الحالات القديمة', () => {
+  assert.equal(createState().zodiacMode, 'heritage');
+  assert.equal(createState({ zodiacMode: 'natal' }).zodiacMode, 'natal');
+  assert.equal(createState({ zodiacMode: 'broken' }).zodiacMode, 'heritage');
+  assert.equal(parseStoredState('{"zodiacMode":"natal"}').zodiacMode, 'natal');
+  assert.equal(parseStoredState('{"zodiacMode":"broken"}').zodiacMode, undefined);
 });
 
 test('يتم ترحيل التاريخ القديم ويبدأ التشغيل العادي من الأسماء', () => {

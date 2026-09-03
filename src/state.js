@@ -1,4 +1,5 @@
 import { LOCAL_BIRTH_CITIES } from './cities-data.js';
+import { allowedZodiacMode } from './zodiac-mode.js';
 
 export const APP_SECTIONS = Object.freeze(['names', 'calculator', 'zodiac', 'reference']);
 const BIRTH_CITY_IDS = new Set(LOCAL_BIRTH_CITIES.map(city => city.id));
@@ -7,7 +8,7 @@ export const STATE_KEYS = Object.freeze([
   'section', 'text', 'target', 'nameA', 'motherA', 'nameB', 'motherB', 'role',
   'father', 'mother', 'desiredBabyName', 'maleSearch', 'femaleSearch',
   'zodiacName', 'zodiacMother', 'birthDay', 'birthMonth', 'birthYear',
-  'birthHour', 'birthMinute', 'birthCity', 'birthTimeKnown', 'namesMode', 'detailMode',
+  'birthHour', 'birthMinute', 'birthCity', 'birthTimeKnown', 'namesMode', 'zodiacMode', 'detailMode',
 ]);
 
 export const DEFAULT_STATE = Object.freeze({
@@ -15,10 +16,10 @@ export const DEFAULT_STATE = Object.freeze({
   role: 'طالب', father: '', mother: '', desiredBabyName: '', maleSearch: '', femaleSearch: '',
   zodiacName: '', zodiacMother: '', birthDay: '', birthMonth: '', birthYear: '',
   birthHour: '12', birthMinute: '0', birthCity: '', birthTimeKnown: false,
-  namesMode: 'baby', detailMode: 'simple', suggestionLimit: 6,
+  namesMode: 'baby', zodiacMode: 'heritage', detailMode: 'simple', suggestionLimit: 6,
 });
 
-const textKeys = STATE_KEYS.filter(key => !['section', 'role', 'birthTimeKnown', 'namesMode', 'detailMode'].includes(key));
+const textKeys = STATE_KEYS.filter(key => !['section', 'role', 'birthTimeKnown', 'namesMode', 'zodiacMode', 'detailMode'].includes(key));
 
 export function parseStoredState(raw = '') {
   try {
@@ -37,6 +38,7 @@ export function sanitizeState(input = {}) {
   if (APP_SECTIONS.includes(input.section)) clean.section = input.section;
   if (['طالب', 'مطلوب'].includes(input.role)) clean.role = input.role;
   if (['baby', 'comparison'].includes(input.namesMode)) clean.namesMode = input.namesMode;
+  if (['heritage', 'natal'].includes(input.zodiacMode)) clean.zodiacMode = allowedZodiacMode(input.zodiacMode);
   if (['simple', 'full'].includes(input.detailMode)) clean.detailMode = input.detailMode;
   if (typeof input.birthTimeKnown === 'boolean') clean.birthTimeKnown = input.birthTimeKnown;
   if (Number.isFinite(input.suggestionLimit)) clean.suggestionLimit = Math.min(500, Math.max(6, Math.trunc(input.suggestionLimit)));
