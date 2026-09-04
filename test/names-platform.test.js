@@ -53,6 +53,20 @@ test('اقتراح المولود ومقارنة الأسماء لا يتناق�
   const result = assessBabyName('تيم', [{ label: 'الأب', profile: profile('داود') }]);
   assert.equal(result.compatible, false);
   assert.match(result.reason, /تضاد/);
+  assert.equal(result.relations.length, 1);
+  assert.equal(result.relations[0].relation, 'تضاد');
+});
+
+test('اقتراح المولود يعرض علاقة مستقلة لكل والد حتى عند وجود تضاد', () => {
+  const parents = [
+    { label: 'الأب', name: 'داود', profile: profile('داود') },
+    { label: 'الأم', name: 'محمد', profile: profile('محمد') },
+  ];
+  const result = assessBabyName('تيم', parents);
+  assert.equal(result.compatible, false);
+  assert.equal(result.relations.length, 2);
+  assert.deepEqual(result.relations.map(item => item.label), ['الأب', 'الأم']);
+  assert.ok(result.relations.every(item => item.explanation));
 });
 
 test('البحث يشرح أن الاسم موجود لكنه غير متوافق', () => {

@@ -13,6 +13,7 @@ export const ELEMENTS = Object.freeze({
   ماء: ['ج', 'ز', 'ك', 'س', 'ق', 'ث', 'ظ'],
   تراب: ['د', 'ح', 'ل', 'ع', 'ر', 'خ', 'غ'],
 });
+export const ELEMENT_DISPLAY_NAMES = Object.freeze({ نار: 'ناري', هواء: 'هوائي', ماء: 'مائي', تراب: 'ترابي' });
 export const PLANETS = ['شمس', 'قمر', 'مريخ', 'عطارد', 'مشتري', 'زهرة', 'زحل'];
 export const ZODIAC = [
   ['الحمل', 'نار'], ['الثور', 'تراب'], ['الجوزاء', 'هواء'], ['السرطان', 'ماء'],
@@ -85,12 +86,14 @@ export function compareProfiles(first, second, firstRole = 'طالب') {
 export function compareElements(first, second) {
   if (!first.leaders.length || !second.leaders.length || first.leaders.length > 1 || second.leaders.length > 1) return { kind: 'مركّب', text: 'متعادل / مركّب — يُقرأ توزيع الطبائع بدل حكم واحد.' };
   const [a] = first.leaders; const [b] = second.leaders;
-  if (a === b) return { kind: 'انسجام', text: 'انسجام: الطبع الغالب متطابق.' };
+  if (a === b) return { kind: 'انسجام', text: `انسجام: الطبع ${elementDisplayName(a)} متطابق.` };
   const relation = elementRelation(a, b);
-  if (relation === 'صداقة') return { kind: relation, text: `صداقة بين الطبائع: ${a} مع ${b}.` };
-  if (relation === 'تضاد') return { kind: relation, text: `تضاد بين الطبائع: ${a} مع ${b}.` };
-  return { kind: 'امتزاج', text: `امتزاج بين طبعَي ${a} و${b} دون تضاد مباشر.` };
+  if (relation === 'صداقة') return { kind: relation, text: `صداقة بين الطبائع: ${elementDisplayName(a)} مع ${elementDisplayName(b)}.` };
+  if (relation === 'تضاد') return { kind: relation, text: `تضاد بين الطبائع: ${elementDisplayName(a)} مع ${elementDisplayName(b)}.` };
+  return { kind: 'امتزاج', text: `امتزاج بين طبعَي ${elementDisplayName(a)} و${elementDisplayName(b)} دون تضاد مباشر.` };
 }
+export function elementDisplayName(element) { return ELEMENT_DISPLAY_NAMES[element] || element || '—'; }
+export function formatElementNames(elements = []) { return elements.map(elementDisplayName).join(' / '); }
 export function elementRelation(first, second) {
   if (!first || !second) return 'غير محدد';
   if (first === second) return 'انسجام';

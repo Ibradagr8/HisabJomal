@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyze, compareElements, compareProfiles, profile } from '../src/engine.js';
+import { analyze, compareElements, compareProfiles, elementDisplayName, formatElementNames, profile } from '../src/engine.js';
 
 test('حسابات الأبجد المرجعية ثابتة', () => {
   assert.equal(analyze('بسم الله الرحمن الرحيم').total, 786);
@@ -22,6 +22,15 @@ test('مقارنة الطبائع تستخدم نفس نموذج اقتراح ا
   assert.equal(profile('تيم').leaders[0], 'هواء');
   assert.equal(profile('داود').leaders[0], 'تراب');
   assert.equal(compareElements(profile('تيم'), profile('داود')).kind, 'تضاد');
+});
+
+test('أسماء الطبائع المعروضة عربية وصفية ولا تغيّر مفاتيح الحساب', () => {
+  assert.equal(elementDisplayName('نار'), 'ناري');
+  assert.equal(elementDisplayName('هواء'), 'هوائي');
+  assert.equal(elementDisplayName('ماء'), 'مائي');
+  assert.equal(elementDisplayName('تراب'), 'ترابي');
+  assert.equal(formatElementNames(['نار', 'هواء']), 'ناري / هوائي');
+  assert.ok(profile('محمد').leaders.includes('نار'));
 });
 
 test('التساوي الفردي يمنح الغلبة للشخص صاحب دور الطالب', () => {

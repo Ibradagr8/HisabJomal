@@ -102,3 +102,16 @@ test('تبويب الأبراج يعرض أداة واحدة عبر بطاقتي
   assert.match(styles, /\.zodiac-mode-switch/);
   assert.match(styles, /\.zodiac-tool-panel/);
 });
+
+test('شاشتا الأسماء تعرضان الغالب والمغلوب وعلاقة الاسم بكل والد بوضوح', async () => {
+  const main = await readFile(new URL('src/main.js', root), 'utf8');
+  const styles = await readFile(new URL('src/styles.css', root), 'utf8');
+  assert.match(main, /الغالب والمغلوب/);
+  assert.match(main, /الغالب حسابيًا/);
+  assert.match(main, /علاقة الاسم بالعائلة/);
+  assert.match(main, /العلاقة مع الأب/);
+  assert.match(main, /العلاقة مع الأم/);
+  assert.match(main, /formatElementNames/);
+  assert.match(styles, /\.dominance-dashboard/);
+  assert.match(styles, /\.parent-relations/);
+});
