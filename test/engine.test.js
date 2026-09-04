@@ -5,10 +5,17 @@ import { analyze, compareElements, compareProfiles, elementDisplayName, formatEl
 test('حسابات الأبجد المرجعية ثابتة', () => {
   assert.equal(analyze('بسم الله الرحمن الرحيم').total, 786);
   assert.equal(analyze('محمد').total, 92);
-  assert.equal(analyze('فاطمة').total, 135);
+  assert.equal(analyze('فاطمة').total, 530);
   assert.equal(analyze('داود').total, 15);
   assert.equal(analyze('جالوت').total, 440);
   assert.equal(analyze('أإآء').total, 4);
+});
+
+test('التاء المربوطة تُحسب كالتاء المفتوحة', () => {
+  assert.equal(analyze('ة').letters[0].normalized, 'ت');
+  assert.equal(analyze('ة').total, 400);
+  assert.equal(analyze('ة').total, analyze('ت').total);
+  assert.equal(analyze('ة').letters[0].normalized, analyze('ت').letters[0].normalized);
 });
 
 test('التطبيع يدعم النص القرآني وأشكال العرض ولا يكرر الشدة', () => {
