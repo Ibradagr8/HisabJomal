@@ -4,7 +4,7 @@ export const ABJAD = Object.freeze({
   ق: 100, ر: 200, ش: 300, ت: 400, ث: 500, خ: 600, ذ: 700, ض: 800, ظ: 900, غ: 1000,
 });
 
-const normalizations = Object.freeze({ أ: 'ا', إ: 'ا', آ: 'ا', ء: 'ا', ٱ: 'ا', ة: 'ه', ئ: 'ي', ى: 'ي', ؤ: 'و' });
+const normalizations = Object.freeze({ أ: 'ا', إ: 'ا', آ: 'ا', ء: 'ا', ٱ: 'ا', ة: 'ت', ئ: 'ي', ى: 'ي', ؤ: 'و' });
 export const OPPOSING_ELEMENTS = Object.freeze(new Set(['نار/ماء', 'ماء/نار', 'هواء/تراب', 'تراب/هواء']));
 export const FRIENDLY_ELEMENTS = Object.freeze(new Set(['نار/هواء', 'هواء/نار', 'ماء/تراب', 'تراب/ماء']));
 export const ELEMENTS = Object.freeze({
