@@ -135,4 +135,7 @@ test('الوضع الداكن معرف بالتوكنز وزر التبديل م
   assert.match(main, /atlas-al-huruf-theme/);
   assert.match(main, /prefers-color-scheme/);
   assert.match(main, /top-actions/);
+  assert.doesNotMatch(styles, /--mint-soft:#1d3a30/);
+  assert.match(styles, /mode-switch button>b/);
+  assert.match(styles, /baby-empty\.is-start/);
 });
