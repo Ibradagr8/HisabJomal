@@ -123,3 +123,16 @@ test('شاشتا الأسماء تعرضان الغالب والمغلوب وع�
   assert.match(styles, /\.dominance-dashboard/);
   assert.match(styles, /\.parent-relations/);
 });
+
+test('الوضع الداكن معرف بالتوكنز وزر التبديل محفوظ محليًا', async () => {
+  const main = await readFile(new URL('src/main.js', root), 'utf8');
+  const styles = await readFile(new URL('src/styles.css', root), 'utf8');
+  assert.match(styles, /\[data-theme="dark"\]/);
+  assert.match(styles, /--paper:#0e1a17/);
+  assert.match(styles, /\.theme-toggle/);
+  assert.match(styles, /\.top-actions/);
+  assert.match(main, /data-theme-toggle/);
+  assert.match(main, /atlas-al-huruf-theme/);
+  assert.match(main, /prefers-color-scheme/);
+  assert.match(main, /top-actions/);
+});

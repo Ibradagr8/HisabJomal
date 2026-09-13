@@ -25,6 +25,22 @@ let stored = {};
 try { stored = parseStoredState(localStorage.getItem('hisab-jomal-state')); } catch { stored = {}; }
 const state = createState(stored, readSharedState());
 const app = document.querySelector('#app');
+const THEME_KEY = 'atlas-al-huruf-theme';
+function preferredTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark' || saved === 'light') return saved;
+  } catch {}
+  return globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+let theme = preferredTheme();
+function applyTheme(next) {
+  theme = next === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem(THEME_KEY, theme); } catch {}
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0e1a17' : '#12332e');
+}
+applyTheme(theme);
 const indexedNames = Object.freeze(buildIndexedNames(maleNames, femaleNames, profile));
 const natalCache = createNatalChartCache(calculateNatalChart);
 const suggestionCache = new Map();
@@ -300,7 +316,7 @@ function render() {
   const keysToRestore = restoredDisclosures({ previousMode, nextMode, openKeys: previouslyOpen });
   lastDetailMode = nextMode;
   const sectionViews = { names, calculator, zodiac, reference }; const result = analyze(state.text); const view = sectionViews[state.section] || names;
-  app.innerHTML = `<div class="shell"><header class="top"><div class="brand"><img src="./icons/icon-192.png" alt=""><div class="brand-copy"><div class="brand-title-row"><h1>أطلس الحروف</h1><span class="developer-mark"><i>تطوير</i><b>إبراهيم بن صلاح الدين</b></span></div><small>الأسماء وحساب الحروف · قراءة تراثية موثّقة</small></div></div><button class="sum-chip" data-go-calculator><span>المجموع الحالي</span><b class="sum-value">${result.count ? num(result.total) : '—'}</b></button></header><nav class="nav">${[['names','الأسماء'],['calculator','الحاسبة'],['zodiac','الأبراج'],['reference','المرجع']].map(([id,label])=>`<button class="${state.section===id?'active':''}" data-nav="${id}">${label}</button>`).join('')}</nav>${view()}<footer class="app-footer"><span>أطلس الحروف</span><b>تطوير إبراهيم بن صلاح الدين</b><small>حسابات محلية · لا تنبؤات غيبية</small></footer></div>`;
+  app.innerHTML = `<div class="shell"><header class="top"><div class="brand"><img src="./icons/icon-192.png" alt=""><div class="brand-copy"><div class="brand-title-row"><h1>أطلس الحروف</h1><span class="developer-mark"><i>تطوير</i><b>إبراهيم بن صلاح الدين</b></span></div><small>الأسماء وحساب الحروف · قراءة تراثية موثّقة</small></div></div><div class="top-actions"><button class="theme-toggle" data-theme-toggle aria-label="التبديل إلى الوضع ${theme === 'dark' ? 'الفاتح' : 'الداكن'}">${theme === 'dark' ? '☀' : '☾'}</button><button class="sum-chip" data-go-calculator><span>المجموع الحالي</span><b class="sum-value">${result.count ? num(result.total) : '—'}</b></button></div></header><nav class="nav">${[['names','الأسماء'],['calculator','الحاسبة'],['zodiac','الأبراج'],['reference','المرجع']].map(([id,label])=>`<button class="${state.section===id?'active':''}" data-nav="${id}">${label}</button>`).join('')}</nav>${view()}<footer class="app-footer"><span>أطلس الحروف</span><b>تطوير إبراهيم بن صلاح الدين</b><small>حسابات محلية · لا تنبؤات غيبية</small></footer></div>`;
   keysToRestore.forEach(key => { const item = [...app.querySelectorAll('details[data-disclosure]')].find(detail => detail.dataset.disclosure === key); if (item) item.open = true; });
   attach();
   if (pendingFocusSelector) {
@@ -324,7 +340,7 @@ function redrawKeepingFocus(selector, cursor) {
     if (field) { field.focus(); if (cursor !== null) { try { field.setSelectionRange?.(cursor, cursor); } catch {} } }
   }, 260);
 }
-function attach() { document.querySelectorAll('[data-nav]').forEach(e=>e.onclick=()=>setSection(e.dataset.nav)); document.querySelector('[data-go-calculator]')?.addEventListener('click',()=>setSection('calculator'));
+function attach() { document.querySelectorAll('[data-nav]').forEach(e=>e.onclick=()=>setSection(e.dataset.nav)); document.querySelector('[data-go-calculator]')?.addEventListener('click',()=>setSection('calculator')); document.querySelector('[data-theme-toggle]')?.addEventListener('click',()=>{applyTheme(theme === 'dark' ? 'light' : 'dark');render();});
   document.querySelectorAll('[data-names-mode]').forEach(button=>button.addEventListener('click',()=>{state.namesMode=button.dataset.namesMode;state.suggestionLimit=6;persist();render();}));
   document.querySelectorAll('[data-zodiac-mode]').forEach(button=>button.addEventListener('click',()=>{Object.assign(state,selectZodiacMode(state,button.dataset.zodiacMode));persist();render();}));
   document.querySelector('[data-detail-mode]')?.addEventListener('click',()=>{state.detailMode=state.detailMode==='simple'?'full':'simple';persist();render();});

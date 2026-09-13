@@ -79,3 +79,88 @@ select.has-error,input.has-error { border-color:var(--danger-border); background
 .baby-result { padding:18px; }.baby-result-head h3 { margin:3px 0 0; color:#163d35; font-size:1.25rem; }.family-compatibility { margin-top:18px; padding-top:16px; border-top:1px solid #dce7e0; }.incompatible .family-compatibility { border-color:#ecd6cf; }.family-compatibility-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }.family-compatibility-head h3 { margin:3px 0 0; color:var(--brand-text); }.family-compatibility-head p { max-width:430px; margin:0; color:#65746c; font-size:.82rem; line-height:1.65; text-align:left; }.parent-relations { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }.parent-relation-card { padding:14px; border:1px solid #d9e5de; border-radius:14px; background:#fff; }.parent-relation-card.is-harmony { border-color:#b8d9c7; background:linear-gradient(145deg,#fff,#eff8f2); }.parent-relation-card.is-balanced { border-color:#eadbbd; background:linear-gradient(145deg,#fff,var(--surface-alt)); }.parent-relation-card.is-conflict { border-color:#ebcbc1; background:linear-gradient(145deg,#fff,#fff3ef); }.parent-relation-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }.parent-relation-head span { color:#758079; font-size:.75rem; }.parent-relation-head h3 { margin:3px 0 0; color:#183c34; }.parent-relation-head>b { padding:5px 8px; border-radius:999px; color:#286250; background:#e2f0e8; font-size:.72rem; }.is-balanced .parent-relation-head>b { color:#855d2e; background:#f8ecd7; }.is-conflict .parent-relation-head>b { color:#9c4333; background:#f9e2dc; }.parent-element-pair { display:grid; grid-template-columns:1fr 25px 1fr; align-items:center; gap:4px; margin-top:14px; }.parent-element-pair span { padding:8px; border:1px solid #e5ebe6; border-radius:9px; background:#fff; }.parent-element-pair small,.parent-element-pair b { display:block; }.parent-element-pair small { color:#7b857f; font-size:.67rem; }.parent-element-pair b { margin-top:2px; color:#214a40; font-size:.82rem; }.parent-element-pair i { display:grid; place-items:center; color:#9a703c; font-style:normal; }.parent-relation-card p { min-height:40px; margin:10px 0 0; color:#69766f; font-size:.78rem; line-height:1.65; }
 
 @media (max-width:720px) { .dominance-dashboard { padding:16px; }.dominance-dashboard-head,.family-compatibility-head { align-items:flex-start; flex-direction:column; }.comparison-note,.family-compatibility-head p { max-width:none; text-align:right; }.dominance-match { grid-template-columns:1fr; }.dominance-arrow { flex-direction:row; height:30px; }.dominance-arrow { transform:rotate(90deg); }.dominance-arrow small { transform:rotate(-90deg); }.dominance-side { min-height:96px; }.parent-relations { grid-template-columns:1fr; }.comparison-evidence-head { align-items:flex-start; flex-direction:column; gap:3px; }.compare-person.is-winner .compare-person-top { padding-inline-start:0; padding-top:27px; } }
+
+/* ===== الوضع الداكن: كل الألوان عبر التوكنز المعرفة في :root ===== */
+.top-actions { display:flex; align-items:center; gap:8px; }
+.theme-toggle { flex:0 0 auto; width:44px; height:44px; display:grid; place-items:center; border-radius:14px; border:1px solid var(--border); background:var(--surface-alt); color:var(--ink); font-size:1.25rem; cursor:pointer; }
+.theme-toggle:hover { border-color:var(--gold); }
+[data-theme="dark"] { color-scheme:dark; --brand-900:#1f5a4b; --brand:#2f9e7c; --brand-text:#8fd3b8; --brand-deep:#b5e6cf; --pine:#0d1f1b; --ink:#e9efe9; --muted:#a9b5ad; --faint:#7f8c84; --paper:#0e1a17; --surface-alt:#17251f; --input:#101f1b; --border:#2b4038; --gold:#d3a05c; --gold-deep:#e3b96f; --gold-soft:#2c2417; --gold-border:#5a4a2c; --gold-ink:#f1cf9f; --mint-soft:#1d3a30; --danger:#e08a76; --danger-border:#5c2f26; --danger-soft:#2a1a16; }
+[data-theme="dark"] textarea, [data-theme="dark"] input, [data-theme="dark"] select { background:var(--input); border-color:var(--border); color:var(--ink); }
+[data-theme="dark"] .btn, [data-theme="dark"] .chip { background:var(--surface-alt); border-color:var(--border); color:var(--ink); }
+[data-theme="dark"] .btn.primary { background:var(--brand-900); border-color:var(--brand-900); color:#fff; }
+[data-theme="dark"] .nav { background:#152420; }
+[data-theme="dark"] .nav button { color:var(--muted); }
+[data-theme="dark"] .nav button.active { background:#24382f; color:#fff; }
+[data-theme="dark"] .mode-switch { background:#152420; border-color:var(--border); }
+[data-theme="dark"] .mode-switch button { color:var(--muted); }
+[data-theme="dark"] .mode-switch button>span { background:#ffffff14; color:var(--gold-ink); }
+[data-theme="dark"] .role-pick { background:var(--surface-alt); border-color:var(--border); color:var(--ink); }
+[data-theme="dark"] .role-pick select { color:var(--ink); }
+[data-theme="dark"] .planet-table th { background:#1b2d27; color:var(--muted); }
+[data-theme="dark"] .planet-table th, [data-theme="dark"] .planet-table td { border-color:var(--border); }
+[data-theme="dark"] .metric { border-color:var(--border); }
+[data-theme="dark"] .word { border-color:var(--border); }
+[data-theme="dark"] .letter { background:#1e3029; }
+[data-theme="dark"] .bar { background:#24382f; }
+[data-theme="dark"] .balance-row>div { background:#24382f; }
+[data-theme="dark"] .card, [data-theme="dark"] .view-mode, [data-theme="dark"] .baby-prompt, [data-theme="dark"] .baby-empty, [data-theme="dark"] .comparison-placeholder, [data-theme="dark"] .natal-placeholder, [data-theme="dark"] .zodiac-boundaries article, [data-theme="dark"] .zodiac-card, [data-theme="dark"] .method-steps article, [data-theme="dark"] .aspect-card, [data-theme="dark"] .houses-grid article, [data-theme="dark"] .comparison-insights article, [data-theme="dark"] .profile-detail, [data-theme="dark"] .planet-readings details, [data-theme="dark"] .comparison-details, [data-theme="dark"] .comparison-evidence, [data-theme="dark"] .big-three-card, [data-theme="dark"] .baby-facts span, [data-theme="dark"] .parent-element-pair span, [data-theme="dark"] .person-stats span, [data-theme="dark"] .time-known, [data-theme="dark"] .angle-grid article, [data-theme="dark"] .synthesis-grid article, [data-theme="dark"] .source-link, [data-theme="dark"] .name-option, [data-theme="dark"] .unknown-time-note, [data-theme="dark"] .time-help { background:var(--surface-alt); border-color:var(--border); }
+[data-theme="dark"] .notice { background:#2c2417; color:#e3c98f; }
+[data-theme="dark"] .interpretation-boundary { background:#241f14; border-color:var(--gold-border); color:#d8c49a; }
+[data-theme="dark"] .interpretation-boundary p { color:#b7a67f; }
+[data-theme="dark"] .form-error { background:var(--danger-soft); color:var(--danger); }
+[data-theme="dark"] .baby-result { background:#152420; border-color:var(--border); }
+[data-theme="dark"] .baby-result.incompatible { background:var(--danger-soft); border-color:var(--danger-border); }
+[data-theme="dark"] .baby-result.neutral { background:#1a201c; border-color:var(--border); }
+[data-theme="dark"] .baby-result p { color:var(--muted); }
+[data-theme="dark"] .family-compatibility { border-color:var(--border); }
+[data-theme="dark"] .incompatible .family-compatibility { border-color:var(--danger-border); }
+[data-theme="dark"] .parent-relation-card.is-harmony, [data-theme="dark"] .parent-relation-card.is-balanced, [data-theme="dark"] .parent-relation-card.is-conflict { background:var(--surface-alt); }
+[data-theme="dark"] .parent-relation-head>b { background:#1d3a30; color:var(--brand-text); }
+[data-theme="dark"] .is-balanced .parent-relation-head>b { background:var(--gold-soft); color:var(--gold-deep); }
+[data-theme="dark"] .is-conflict .parent-relation-head>b { background:var(--danger-soft); color:var(--danger); }
+[data-theme="dark"] .compare-person { background:linear-gradient(145deg,#17251f,#122019); }
+[data-theme="dark"] .compare-person.is-winner { background:linear-gradient(145deg,#16281f,#123527); }
+[data-theme="dark"] .versus-mark b { background:#24382f; color:var(--gold-ink); }
+[data-theme="dark"] .dominance-side.loser { opacity:.65; }
+[data-theme="dark"] .dominance-dashboard, [data-theme="dark"] .zodiac-hero, [data-theme="dark"] .zodiac-result, [data-theme="dark"] .result-ribbon { border:1px solid #ffffff1f; }
+[data-theme="dark"] .big-three { background:linear-gradient(145deg,#121f1b,#0f1c18); border-color:var(--border); }
+[data-theme="dark"] .mini-tags span { background:#1d3a30; color:var(--brand-text); }
+[data-theme="dark"] .gender-mark.male { background:#14292e; color:#7fc4d6; }
+[data-theme="dark"] .gender-mark.female { background:#2c1e26; color:#d69ab5; }
+[data-theme="dark"] .name-option em { background:#1d3a30; color:var(--brand-text); }
+[data-theme="dark"] .relation-chips span { background:#1d3a30; color:var(--brand-text); }
+[data-theme="dark"] .house-note { background:#1b2d27; }
+[data-theme="dark"] .element-quality-grid article { background:#1b2d27; }
+[data-theme="dark"] .eyebrow { color:var(--gold-deep); }
+[data-theme="dark"] .aspect-card strong { color:var(--gold-deep); }
+[data-theme="dark"] .houses-grid small { color:var(--gold-deep); }
+[data-theme="dark"] .houses-grid article>span { background:var(--brand-900); color:#fff; }
+[data-theme="dark"] .angle-grid article>span { background:#2c2417; color:var(--gold-ink); }
+[data-theme="dark"] .missing-time>span { background:#2c2417; color:var(--gold-ink); }
+[data-theme="dark"] .synthesis-grid article>span { background:#2c2417; color:var(--gold-deep); }
+[data-theme="dark"] .insight-number { background:#2c2417; color:var(--gold-ink); }
+[data-theme="dark"] .source-link>span { background:#2c2417; color:var(--gold-ink); }
+[data-theme="dark"] .zodiac-card-top>span { color:var(--gold-deep); }
+[data-theme="dark"] .planet-symbol { background:#2c2417; color:var(--gold-ink); }
+[data-theme="dark"] .retrograde { color:var(--danger); }
+[data-theme="dark"] .total-card .hero-number, [data-theme="dark"] .compare-total strong, [data-theme="dark"] .baby-result strong { color:var(--ink); }
+[data-theme="dark"] .developer-mark { background:#1c2b27; border-color:var(--gold-border); }
+[data-theme="dark"] .developer-mark b { color:var(--ink); }
+[data-theme="dark"] .app-footer { border-color:var(--border); }
+[data-theme="dark"] .app-footer b { color:var(--ink); }
+[data-theme="dark"] .baby-inputs .desired-name input { background:#171208; }
+[data-theme="dark"] .status-badge { background:var(--brand-900); }
+[data-theme="dark"] .incompatible .status-badge { background:#7c3527; }
+[data-theme="dark"] .winner-chip { background:var(--brand-900); }
+[data-theme="dark"] .precision-badge { background:#1d3a30; color:var(--brand-text); }
+[data-theme="dark"] .precision-badge.unavailable { background:#2a2a26; color:#a9a49a; }
+[data-theme="dark"] .precision-badge.symbolic { background:#2c2417; color:var(--gold-deep); }
+[data-theme="dark"] .calculation-strip { background:#00000040; }
+[data-theme="dark"] .dominance-rule { background:#00000040; }
+[data-theme="dark"] .progressive-section[open]>summary { border-color:var(--border); }
+[data-theme="dark"] .comparison-details[open] summary { border-color:var(--border); }
+[data-theme="dark"] .profile-detail { background:#121f1b; }
+[data-theme="dark"] .baby-empty.is-start { background:linear-gradient(145deg,#1c2415,#121a10); }
+[data-theme="dark"] .zodiac-mode-switch { background:linear-gradient(145deg,#1a2622,#141f1b); border-color:var(--gold-border); }
+[data-theme="dark"] select.has-error, [data-theme="dark"] input.has-error { background:#2a1a16; }
+[data-theme="dark"] .natal-placeholder.is-error { background:var(--danger-soft); }
