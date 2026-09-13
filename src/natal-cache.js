@@ -54,27 +54,38 @@ export function natalChartInputKey(input = {}) {
   return JSON.stringify(resolveNatalChartFacts(input));
 }
 
-export function createNatalChartCache(calculate) {
-  let key = null;
-  let chart = null;
-  let error = null;
+export function createNatalChartCache(calculate, { maxSize = 20 } = {}) {
+  const entries = new Map();
   let calls = 0;
   return {
     get(input) {
       const nextKey = natalChartInputKey(input);
-      if (key === nextKey) return { chart, error, cacheHit: true, calls };
+      if (entries.has(nextKey)) {
+        const hit = entries.get(nextKey);
+        // LRU: نعيد إدخال المفتاح ليبقى الأحدث في النهاية
+        entries.delete(nextKey);
+        entries.set(nextKey, hit);
+        return { chart: hit.chart, error: hit.error, cacheHit: true, calls };
+      }
       calls += 1;
-      key = nextKey;
+      let chart = null;
+      let error = null;
       try {
         chart = calculate(input);
-        error = null;
       } catch (err) {
         chart = null;
         error = err;
       }
+      entries.set(nextKey, { chart, error });
+      if (entries.size > maxSize) {
+        // إسقاط أقدم مفتاح للحفاظ على حد الذاكرة
+        const oldest = entries.keys().next().value;
+        entries.delete(oldest);
+      }
       return { chart, error, cacheHit: false, calls };
     },
     getCalls() { return calls; },
-    reset() { key = null; chart = null; error = null; calls = 0; },
+    size() { return entries.size; },
+    reset() { entries.clear(); calls = 0; },
   };
 }

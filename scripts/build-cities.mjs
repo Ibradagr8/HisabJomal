@@ -2,6 +2,10 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+// ملاحظة صيانة: countrySources أدناه = مصر فقط (EG).
+// مدخلات SA في arabicNames و administrativeAreas موروثة وغير مستخدمة حاليًا،
+// تُبقى للمرجع ولا تدخل في الناتج. لا تضف دولًا جديدة هنا بدون تحديث واجهة اختيار المدينة وقواعد الخصوصية.
+
 const arabicNames = new Map(Object.entries({
   '346201':'الزعفرانة','347542':'طامية','347749':'سمسطا السلطاني','347907':'سنورس','350207':'رأس غارب',
   '350211':'رأس البر','350661':'قصر الفرافرة','351766':'موط','352679':'مشتول السوق','353219':'مدينة السادس من أكتوبر',

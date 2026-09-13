@@ -61,6 +61,23 @@ test('تغيير اليوم يبطل كاش خريطة الميلاد', () => {
   assert.equal(calls, 2);
 });
 
+test('الكاش متعدد المدخلات بنظام LRU مع حد أقصى للذاكرة', () => {
+  let calls = 0;
+  const cache = createNatalChartCache(input => {
+    calls += 1;
+    return { ok: true, day: input.day };
+  }, { maxSize: 2 });
+  cache.get({ ...baseInput, day: '1' });
+  cache.get({ ...baseInput, day: '2' });
+  // الرجوع للأول يجب أن يكون hit لأن الكاش لم يعد single-entry
+  assert.equal(cache.get({ ...baseInput, day: '1' }).cacheHit, true);
+  assert.equal(calls, 2);
+  cache.get({ ...baseInput, day: '3' });
+  // day 2 هو الأقدم الآن ويجب إسقاطه بعد تجاوز maxSize
+  assert.equal(cache.size(), 2);
+  assert.equal(cache.get({ ...baseInput, day: '2' }).cacheHit, false);
+});
+
 test('تغيير الوقت يبطل كاش خريطة الميلاد', () => {
   let calls = 0;
   const cache = createNatalChartCache(input => {

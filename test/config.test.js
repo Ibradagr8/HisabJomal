@@ -25,6 +25,14 @@ test('عامل الخدمة يطابق إصدار الحزمة ولا يخزن �
   assert.doesNotMatch(source, /cached\s*\|\|\s*caches\.match\(['"]\.\/index\.html/);
 });
 
+test('رقم الإصدار موحد في package.json و tauri.conf.json و Cargo.toml', async () => {
+  const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
+  const tauri = JSON.parse(await readFile(new URL('src-tauri/tauri.conf.json', root), 'utf8'));
+  const cargo = await readFile(new URL('src-tauri/Cargo.toml', root), 'utf8');
+  assert.match(tauri.version, new RegExp(`^${pkg.version.replaceAll('.', '\\.')}$`));
+  assert.match(cargo, new RegExp(`^version = "${pkg.version.replaceAll('.', '\\.')}"`, 'm'));
+});
+
 test('نسخة الويب تضع سياسة أمان للمحتوى وتستخدم أيقونة هيدر خفيفة', async () => {
   const html = await readFile(new URL('index.html', root), 'utf8');
   const main = await readFile(new URL('src/main.js', root), 'utf8');

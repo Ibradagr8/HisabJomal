@@ -48,7 +48,9 @@ export default defineConfig({
           const { html: next, applied } = applyDevConnectSrc(html);
           const hasLocalSockets = VITE_DEV_WS_ORIGINS.every(origin => next.includes(origin));
           if (!applied && !hasLocalSockets) {
-            throw new Error('تعذّر إضافة عناوين WebSocket الخاصة بـ Vite إلى سياسة أمان المحتوى');
+            // وضع التطوير فقط: لا نكسر `npm run dev` برمي استثناء، نكتفي بتحذير
+            // لأن سياسة الإنتاج في index.html تبقى سليمة بدون عناوين ws://
+            console.warn('تعذّر إضافة عناوين WebSocket الخاصة بـ Vite إلى سياسة أمان المحتوى');
           }
           return next;
         },
