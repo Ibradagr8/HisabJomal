@@ -3,3 +3,6 @@ dist/
 release-web/
 src-tauri/target/
 .DS_Store
+e2e/screenshots/
+playwright-report/
+test-results/

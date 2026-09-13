@@ -127,6 +127,19 @@ export function parseBirthDate(dayRaw, monthRaw, yearRaw, today = new Date()) {
   };
 }
 
+export function formatHijriDate(dayRaw, monthRaw, yearRaw) {
+  const day = Number(westernDigits(dayRaw).replace(/\D/g, ''));
+  const month = Number(westernDigits(monthRaw).replace(/\D/g, ''));
+  const year = Number(westernDigits(yearRaw).replace(/\D/g, '').slice(0, 4));
+  if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) return null;
+  if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  try {
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
+  } catch { return null; }
+}
+
 export const ZODIAC_SOURCES = Object.freeze([
   ['مختبر الدفع النفاث وناسا', 'مرجع للتحقق من مواضع الشمس والقمر والكواكب بحسب الزمن والموقع', 'https://ssd.jpl.nasa.gov/horizons/manual.html'],
   ['المرصد البحري الأمريكي', 'الزمن النجمي والبيانات الفلكية اللازمة لحساب الزوايا السماوية', 'https://aa.usno.navy.mil/data/siderealtime'],

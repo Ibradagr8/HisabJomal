@@ -174,3 +174,5 @@ select.has-error,input.has-error { border-color:var(--danger-border); background
 [data-theme="dark"] .natal-field-grid label>span, [data-theme="dark"] .time-fields label>span, [data-theme="dark"] .view-mode small { color:var(--muted); }
 [data-theme="dark"] .progressive-section>summary small { color:var(--gold-deep); }
 [data-theme="dark"] .zodiac-tool-hint { background:var(--surface-alt); color:var(--muted); }
+.hijri-note { margin:12px 0 0; padding:9px 12px; border-radius:9px; background:var(--gold-soft); color:var(--brand-text); font-size:.82rem; }
+.hijri-note b { color:var(--gold-deep); }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ZODIAC_SOURCES, daysInMonth, isAllowedSourceUrl, isLeapYear, parseBirthDate, visibleDayCount, zodiacFromDate, zodiacFromNumber } from '../src/zodiac.js';
+import { ZODIAC_SOURCES, daysInMonth, formatHijriDate, isAllowedSourceUrl, isLeapYear, parseBirthDate, visibleDayCount, zodiacFromDate, zodiacFromNumber } from '../src/zodiac.js';
 
 test('تاريخ الميلاد يقبل الأرقام العربية والغربية', () => {
   assert.equal(parseBirthDate('١', '٤', '١٩٩٠').sign.name, 'الحمل');
@@ -72,4 +72,13 @@ test('جميع روابط المصادر HTTPS وموجودة في قائمة ا
     assert.equal(isAllowedSourceUrl(url), true);
   }
   assert.equal(isAllowedSourceUrl('https://example.com'), false);
+});
+
+test('التاريخ الهجري يُعرض بجانب الميلادي محليًا دون إنترنت', () => {
+  const hijri = formatHijriDate('1', '4', '1990');
+  assert.match(hijri, /رمضان/);
+  assert.match(hijri, /١٤١٠/);
+  assert.equal(formatHijriDate('١', '٤', '١٩٩٠'), hijri);
+  assert.equal(formatHijriDate('30', '2', '2025'), null);
+  assert.equal(formatHijriDate('', '', ''), null);
 });

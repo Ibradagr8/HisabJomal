@@ -9,7 +9,9 @@
     "build:desktop": "vite build",
     "build:standalone": "vite build",
     "test": "node --test",
-    "check": "npm test && npm run build:desktop",
+    "test:e2e": "playwright test",
+    "bump": "node scripts/bump-version.mjs",
+    "check": "npm test && npm run build:desktop && npm run test:e2e",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
@@ -17,6 +19,7 @@
     "tauri:build:windows": "tauri build --bundles nsis"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tauri-apps/cli": "^2.11.4",
     "vite": "^7.1.7"
   },
